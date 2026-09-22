@@ -1,0 +1,12 @@
+{
+  "id": "gen1recomp_expansion",
+  "name": "Kanto Expansion",
+  "version": "0.1.0",
+  "entry": "main.lua",
+  "api": 2,
+  "profile": "overhaul",
+  "category": "GAMEPLAY",
+  "games": ["gen1"],
+  "description": "A systems-first expansion layer for Gen 1: reactive trainers, Pokemon history, rumors, world events, ecology, reputation, and strange Kanto systems.",
+  "experimental": true
+}
