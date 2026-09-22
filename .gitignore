@@ -1,0 +1,4 @@
+baseroms/
+*.love
+.DS_Store
+Thumbs.db
