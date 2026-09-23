@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.1.5
+
+- Added warm illuminated exterior windows to the normal Gen 1 2D night renderer, preserving the cool moonlit environment around them.
+- Kept Battle Art untouched because its voxel renderer already owns night window lighting.
+- Updated the GitHub update source to the renamed `dscrete/recomp_additions` repository.
+
 ## 0.1.4
 
 - Added the manifest `github` source so Gen1Recomp can discover releases for Update and Versions once the repository is public.
