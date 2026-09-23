@@ -10,13 +10,17 @@ local NIGHT_RAMP = {
   { 8, 12, 32 },
 }
 
--- Pallet's standard house windows use OVERWORLD tile $0A. The previous
--- $0B/$0C/$1B/$1C mapping was the glass-panelled DOOR, which is why the door
--- lit correctly while the actual windows stayed dark. The same $0A pane is
--- reused across the standard OVERWORLD house facade.
-local WINDOW_TILES = {
-  [0x0A] = true,
+-- Standard OVERWORLD light sources. $0A is the house window. The four door
+-- tiles are also present, but only their small glass panel is lit: the mask is
+-- expressed in tile-local pixels so the wooden/stone door frame stays dark.
+local LIGHT_TILES = {
+  [0x0A] = { x = 0, y = 0, w = 8, h = 8 },
+  [0x0B] = { x = 4, y = 3, w = 4, h = 5 },
+  [0x0C] = { x = 0, y = 3, w = 5, h = 5 },
+  [0x1B] = { x = 4, y = 0, w = 4, h = 2 },
+  [0x1C] = { x = 0, y = 0, w = 5, h = 2 },
 }
+
 local WINDOW_RAMP = {
   { 255, 252, 218 },
   { 255, 222, 118 },
@@ -92,17 +96,16 @@ return function(mod, ctx)
     local game = ctx.runtime.game
     local world = game and (game.overworld or game.world)
     local map = world and world.map
-    if type(map) ~= "table" or not map.tileset
-      or map.tileset.id ~= "OVERWORLD" then return nil end
+    if type(world) ~= "table" or type(map) ~= "table" then return nil end
 
     local canvas = frame and frame.worldCanvas
     local viewW = canvas and canvas:getWidth() or 160
     local viewH = canvas and canvas:getHeight() or 144
-    local camera = world and world.camera
+    local camera = world.camera
     local camX = camera and tonumber(camera.x) or nil
     local camY = camera and tonumber(camera.y) or nil
     if camX == nil or camY == nil then
-      local player = world and world.player
+      local player = world.player
       local px = player and tonumber(player.px)
       local py = player and tonumber(player.py)
       if px == nil or py == nil then return nil end
@@ -110,31 +113,66 @@ return function(mod, ctx)
       camX = px - (viewW / 2 - 16)
       camY = py - (viewH / 2 - 8)
     end
-    return world, map, math.floor(camX), math.floor(camY), viewW, viewH
+    return world, math.floor(camX), math.floor(camY), viewW, viewH
   end
 
-  local function eachVisibleWindow(frame, fn)
-    local _, map, camX, camY, viewW, viewH = worldView(frame)
-    if not map then return false end
-    local blocks = map.tileset.blocks
-    if type(blocks) ~= "table" or type(map.blockAt) ~= "function" then return false end
+  -- The engine draws the current map at (0,0) in world coordinates and every
+  -- connected neighbour at its authored nb.ox/nb.oy offset. Scan those same
+  -- resident maps and transform their light-source tiles into canvas coords.
+  -- This keeps Pallet's windows lit even after the player steps onto Route 1
+  -- while Pallet remains visible across the connection seam.
+  local function eachVisibleLight(frame, fn)
+    local world, camX, camY, viewW, viewH = worldView(frame)
+    if not world then return false end
 
-    local tx0 = math.max(0, math.floor(camX / 8))
-    local ty0 = math.max(0, math.floor(camY / 8))
-    local tx1 = math.min((map.def.width or 0) * 4 - 1,
-                         math.floor((camX + viewW) / 8))
-    local ty1 = math.min((map.def.height or 0) * 4 - 1,
-                         math.floor((camY + viewH) / 8))
+    local maps = { { map = world.map, ox = 0, oy = 0 } }
+    for _, nb in ipairs(world.neighbors or {}) do
+      if type(nb) == "table" and nb.map then
+        maps[#maps + 1] = {
+          map = nb.map,
+          ox = tonumber(nb.ox) or 0,
+          oy = tonumber(nb.oy) or 0,
+        }
+      end
+    end
+
     local found = false
-    for ty = ty0, ty1 do
-      local by, ciY = math.floor(ty / 4), ty % 4
-      for tx = tx0, tx1 do
-        local blockId = map:blockAt(math.floor(tx / 4), by)
-        local block = blockId ~= nil and blocks[blockId + 1] or nil
-        local tile = block and block[ciY * 4 + (tx % 4) + 1] or nil
-        if WINDOW_TILES[tile] then
-          found = true
-          fn(map, tile, tx * 8 - camX, ty * 8 - camY)
+    for _, placed in ipairs(maps) do
+      local map, ox, oy = placed.map, placed.ox, placed.oy
+      if type(map) == "table" and map.tileset
+        and map.tileset.id == "OVERWORLD"
+        and type(map.tileset.blocks) == "table"
+        and type(map.blockAt) == "function" then
+
+        local localCamX = camX - ox
+        local localCamY = camY - oy
+        local mapTilesW = (map.def.width or 0) * 4
+        local mapTilesH = (map.def.height or 0) * 4
+        local tx0 = math.max(0, math.floor(localCamX / 8))
+        local ty0 = math.max(0, math.floor(localCamY / 8))
+        local tx1 = math.min(mapTilesW - 1,
+                             math.floor((localCamX + viewW) / 8))
+        local ty1 = math.min(mapTilesH - 1,
+                             math.floor((localCamY + viewH) / 8))
+
+        if tx1 >= tx0 and ty1 >= ty0 then
+          local blocks = map.tileset.blocks
+          for ty = ty0, ty1 do
+            local by, ciY = math.floor(ty / 4), ty % 4
+            for tx = tx0, tx1 do
+              local blockId = map:blockAt(math.floor(tx / 4), by)
+              local block = blockId ~= nil and blocks[blockId + 1] or nil
+              local tile = block and block[ciY * 4 + (tx % 4) + 1] or nil
+              local light = LIGHT_TILES[tile]
+              if light then
+                found = true
+                fn(map, tile,
+                   ox + tx * 8 - camX,
+                   oy + ty * 8 - camY,
+                   light)
+              end
+            end
+          end
         end
       end
     end
@@ -144,9 +182,10 @@ return function(mod, ctx)
   local function addLitWindowZones(frame)
     local zones = frame and frame.worldZones
     if type(zones) ~= "table" then return end
-    eachVisibleWindow(frame, function(_, _, x, y)
+    eachVisibleLight(frame, function(_, _, x, y, light)
       zones[#zones + 1] = {
-        x = x, y = y, w = 8, h = 8,
+        x = x + light.x, y = y + light.y,
+        w = light.w, h = light.h,
         colors = WINDOW_RAMP,
       }
     end)
@@ -166,10 +205,10 @@ return function(mod, ctx)
   end
 
   -- GBC/ADVANCED color modes bake true color into the tileset atlas and return
-  -- an empty world-zone list, so palette zones cannot brighten the windows at
-  -- all. Redraw the *actual window tile art* after the blue night grade. That
-  -- bypasses the darkening for the panes, keeps their dark pixel detail intact,
-  -- and adds a warm additive boost so they read like Gold's lit windows.
+  -- an empty world-zone list, so palette zones cannot brighten the lights at
+  -- all. Redraw the authored source tile through a tile-local scissor after the
+  -- blue night grade, then add a warm boost. Windows use the full tile; doors
+  -- only expose the glass-panel rectangle.
   local function drawTrueColorWindows(frame)
     local canvas = frame and frame.worldCanvas
     if not canvas or not love.graphics.setCanvas then return end
@@ -180,32 +219,38 @@ return function(mod, ctx)
     end
 
     love.graphics.setCanvas(canvas)
-    love.graphics.setScissor(0, 0, canvas:getWidth(), canvas:getHeight())
 
-    eachVisibleWindow(frame, function(map, tile, x, y)
+    eachVisibleLight(frame, function(map, tile, x, y, light)
       local tr = map.renderer
       local image = tr and tr.image
       local quad = tr and tr.quads and tr.quads[tile]
       if not image or not quad then return end
 
-      -- First put the undarkened source pane back with a strong warm tint.
+      local sx = math.max(0, x + light.x)
+      local sy = math.max(0, y + light.y)
+      local ex = math.min(canvas:getWidth(), x + light.x + light.w)
+      local ey = math.min(canvas:getHeight(), y + light.y + light.h)
+      if ex <= sx or ey <= sy then return end
+      love.graphics.setScissor(sx, sy, ex - sx, ey - sy)
+
+      -- Restore the undarkened source pixels with a strong warm tint.
       love.graphics.setBlendMode("alpha", "alphamultiply")
       love.graphics.setColor(1.0, 0.86, 0.40, 0.98)
       love.graphics.draw(image, quad, x, y)
 
-      -- Then make the pane's brighter pixels emit extra warm light.
+      -- Additive drawing makes the pane's bright pixels read as emitted light.
       love.graphics.setBlendMode("add", "alphamultiply")
       love.graphics.setColor(1.0, 0.58, 0.10, 0.46)
       love.graphics.draw(image, quad, x, y)
     end)
 
+    love.graphics.setScissor()
     love.graphics.setColor(1, 1, 1, 1)
     if previousMode then
       love.graphics.setBlendMode(previousMode, previousAlpha)
     else
       love.graphics.setBlendMode("alpha", "alphamultiply")
     end
-    love.graphics.setScissor()
     love.graphics.setCanvas(previous)
   end
 
@@ -240,8 +285,8 @@ return function(mod, ctx)
   -- At this seam the engine has separate world and UI canvases. For the normal
   -- SGB/OG palette path, recolor only the world zones. GBC/ADVANCED already
   -- contains true-color pixels, so darken the canvas and redraw the authored
-  -- window graphics as warm light sources. A render pipeline (Battle Art) owns
-  -- its own lighting and is left completely untouched.
+  -- light graphics as warm sources. A render pipeline (Battle Art) owns its
+  -- own lighting and is left completely untouched.
   mod.hooks:wrap("render.compose", function(next, renderer, frame)
     if not isNight() or ctx.runtime.battle or type(frame) ~= "table"
       or frame.worldActive ~= true or frame.worldOverride
