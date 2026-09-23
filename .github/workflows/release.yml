@@ -1,0 +1,54 @@
+name: Package development release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build installable ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          short_sha="${GITHUB_SHA::7}"
+          stage="dist/gen1recomp_expansion"
+          mkdir -p "$stage"
+
+          cp manifest.json main.lua README.md CHANGELOG.md "$stage/"
+          cp -R src "$stage/src"
+          if [ -d docs ]; then cp -R docs "$stage/docs"; fi
+          if [ -f AGENTS.md ]; then cp AGENTS.md "$stage/"; fi
+
+          (
+            cd dist
+            zip -r "gen1recomp_expansion-${short_sha}.zip" gen1recomp_expansion
+          )
+
+          echo "SHORT_SHA=$short_sha" >> "$GITHUB_ENV"
+          echo "ZIP_PATH=dist/gen1recomp_expansion-${short_sha}.zip" >> "$GITHUB_ENV"
+
+      - name: Create prerelease for commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="dev-${GITHUB_SHA}"
+          title="Development build ${SHORT_SHA}"
+          notes="Automated development build from commit ${GITHUB_SHA}. Extract the top-level gen1recomp_expansion directory into Gen1Recomp's mods directory."
+
+          gh release create "$tag" "$ZIP_PATH" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "$title" \
+            --notes "$notes" \
+            --prerelease
