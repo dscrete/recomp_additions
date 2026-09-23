@@ -18,6 +18,7 @@ mods/
         ├── extras.lua
         ├── trainers.lua
         ├── world.lua
+        ├── night_visual.lua
         ├── pokemon.lua
         ├── ui.lua
         └── api.lua
@@ -25,16 +26,17 @@ mods/
 
 Enable **Kanto Expansion** in the Gen1Recomp mod manager. The manifest is marked experimental while the systems are still being filled with content.
 
-## What exists in 0.1.0
+## What exists in 0.1.1
 
-The first pass implements the reusable mechanics rather than filling every route with finished authored content:
+The current pass implements reusable mechanics rather than filling every route with finished authored content:
 
 - centralized **World Director** with cooldowns and weighted events
 - persistent **world moods / luck states**
 - lightweight **run mutations** (the anti-randomizer idea)
 - **rumors**, bulletin headlines, and unreliable travel tips
 - step-based **After Dark** time-of-day cycle with named duration presets
-- optional lightweight **night visual** fallback for Gen 1
+- Gen 1 **moonlit night palette treatment** on outdoor maps, with UI/interiors kept readable
+- brief non-blocking **night/morning transition notices**
 - one centralized wild encounter arbiter for rumors, ecology, night rules, run mutations, and strange encounters
 - **route ecology pressure** tracking with registerable replacement rules
 - rare **strange wild encounters** with boosted levels
@@ -73,11 +75,15 @@ The day/night cycle uses named presets instead of a raw step-only control:
 - Very Long — 4096 steps
 - Marathon — 8192 steps
 
-`NIGHT VISUAL` controls the optional Gen 1 visual fallback independently of the semantic time-of-day system. Future Gold/Silver support should prefer the target game's native time-of-day presentation and leave this fallback disabled or bypassed.
+`NIGHT VISUAL` controls the Gen 1 presentation independently of the semantic time-of-day system. At night, outdoor world palette zones are shifted toward a much more obvious moonlit blue/navy ramp while normal UI remains bright; ADVANCED color mode receives a world-canvas-only grade. Indoor maps are left substantially unchanged. When the cycle crosses a boundary, a short non-blocking `NIGHT HAS FALLEN` or `MORNING HAS COME` notice appears.
 
-## Automated development releases
+Future Gold/Silver support should use the target game's native `MORN` / `DAY` / `NITE` presentation instead of applying the Gen 1 fallback.
 
-Every push to `main` is packaged by GitHub Actions into an installable ZIP and published as a prerelease tagged to that commit. The ZIP contains a single top-level `gen1recomp_expansion/` directory so it can be extracted directly into a `mods/` directory.
+## Tagged development releases
+
+Releases are not generated for every implementation commit. A completed change set updates the `.release` marker once, and GitHub Actions packages that final `main` commit into an installable ZIP and creates the matching Git tag/release. The ZIP contains a single top-level `gen1recomp_expansion/` directory so it can be extracted directly into a `mods/` directory.
+
+While the mod remains experimental, these tagged builds are published as prereleases.
 
 ## Deliberately deferred pieces
 
@@ -101,6 +107,8 @@ python3 tools/modkit.py validate /path/to/gen1recomp_expansion --strict --base a
 
 The Lua modules have also been smoke-tested with a stubbed API for load, event, hook, persistence, encounter, trainer, and export behavior. A real Gen1Recomp boot is still the authoritative integration test.
 
+For night presentation specifically, test an outdoor town/route, an indoor map, a menu/dialogue over the overworld, SGB and ADVANCED color modes, a battle transition, and both DAY→NIGHT and NIGHT→DAY boundaries.
+
 ## Current version
 
-`0.1.0` — framework/basics pass. Content density comes next.
+`0.1.1` — framework/basics pass with improved day/night presentation and tagged release packaging.
