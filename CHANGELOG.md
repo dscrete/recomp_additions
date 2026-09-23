@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.1.9
+
+- Corrected the Pallet Town house-light mapping again after inspecting the actual 2x2 house blocks: `$0B/$0C/$1B/$1C` are the glass-panelled door, while the visible facade windows are OVERWORLD tile `$0A`.
+- Removed the door tiles from the night-light target set and now apply the warm emissive treatment to the actual window panes.
+
 ## 0.1.8
 
 - Corrected Pallet Town's actual 2x2 house-window tile IDs (`$0B/$0C/$1B/$1C`).
