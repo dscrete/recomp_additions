@@ -7,7 +7,8 @@ return function(mod, ctx)
         mapId = ctx.runtime.currentMap,
         steps = ctx.runtime.steps,
         mood = ctx.worldMood(),
-        tod = ctx.currentTodFromSteps(),
+        tod = ctx.currentTod(),
+        hour = ctx.currentHour(),
         rocketHeat = ctx.getHeat(),
         rumor = ctx.currentRumor(),
         tip = mod.save:get("current_tip"),
@@ -23,6 +24,18 @@ return function(mod, ctx)
     pokemonRecord = function(mon) return ctx.ensureMonRecord(mon) end,
     awardPokemonTitle = function(mon, id) return ctx.awardTitle(mon, id) end,
     trainerMemory = function(npcId) return (ctx.trainerMemory(npcId)) end,
+    time = {
+      hour = function() return ctx.currentHour() end,
+      period = function() return ctx.currentTod() end,
+      fraction = function()
+        local hour = ctx.currentHour()
+        return hour and (hour % 24) / 24 or nil
+      end,
+      source = function()
+        if mod.generation ~= 1 then return "NATIVE" end
+        return mod.options:get("night_time_source") or "REAL_TIME"
+      end,
+    },
 
     registerRumor = function(def)
       assert(type(def) == "table", "rumor definition must be a table")
