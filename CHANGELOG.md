@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.1.3
+
+- Removed the experimental manifest flag so fresh installs are enabled by default under Gen1Recomp's mod enable-state rules.
+- Existing users who explicitly disabled the mod keep their saved preference.
+
 ## 0.1.2
 
 - Added a Gen 1 time-source selector: device-local Real Time, Accelerated, Fixed Day, or Fixed Night.
