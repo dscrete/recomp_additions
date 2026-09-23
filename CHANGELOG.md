@@ -2,10 +2,14 @@
 
 ## Unreleased
 
+## 0.1.1
+
 - Replaced the raw day/night step control with named duration presets from Very Fast through Marathon.
-- Added an independent `NIGHT VISUAL` option for a lightweight Gen 1 night presentation fallback.
+- Replaced the full-screen night dim with a Gen 1 world-only moonlit palette treatment; normal interiors and UI remain substantially unchanged.
+- Added a non-blocking `NIGHT HAS FALLEN` / `MORNING HAS COME` transition cue.
+- Kept the Gen 1 night presentation isolated so future Gold/Silver support can use the target game's native time-of-day visuals.
 - Added `AGENTS.md` with contributor rules for presets, shared hooks, generation compatibility, packaging, and validation.
-- Added a GitHub Actions workflow that packages every `main` commit as an installable ZIP prerelease.
+- Changed automated releases from every `main` commit to one tagged ZIP release per completed change set, triggered by the `.release` marker.
 
 ## 0.1.0
 
