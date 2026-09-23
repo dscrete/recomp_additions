@@ -10,12 +10,12 @@ local NIGHT_RAMP = {
   { 8, 12, 32 },
 }
 
--- Pallet's standard house window is a 16x16 graphic assembled from these four
--- OVERWORLD tiles. The previous guesses ($28/$29/$31) are roof/wall tiles and
--- therefore never lit the actual panes.
+-- Pallet's standard house windows use OVERWORLD tile $0A. The previous
+-- $0B/$0C/$1B/$1C mapping was the glass-panelled DOOR, which is why the door
+-- lit correctly while the actual windows stayed dark. The same $0A pane is
+-- reused across the standard OVERWORLD house facade.
 local WINDOW_TILES = {
-  [0x0B] = true, [0x0C] = true,
-  [0x1B] = true, [0x1C] = true,
+  [0x0A] = true,
 }
 local WINDOW_RAMP = {
   { 255, 252, 218 },
@@ -168,8 +168,8 @@ return function(mod, ctx)
   -- GBC/ADVANCED color modes bake true color into the tileset atlas and return
   -- an empty world-zone list, so palette zones cannot brighten the windows at
   -- all. Redraw the *actual window tile art* after the blue night grade. That
-  -- bypasses the darkening for the panes, keeps their black outlines intact,
-  -- and adds a small warm additive boost so they read like Gold's lit windows.
+  -- bypasses the darkening for the panes, keeps their dark pixel detail intact,
+  -- and adds a warm additive boost so they read like Gold's lit windows.
   local function drawTrueColorWindows(frame)
     local canvas = frame and frame.worldCanvas
     if not canvas or not love.graphics.setCanvas then return end
@@ -188,15 +188,14 @@ return function(mod, ctx)
       local quad = tr and tr.quads and tr.quads[tile]
       if not image or not quad then return end
 
-      -- First put the undarkened source tile back with a strong warm tint.
+      -- First put the undarkened source pane back with a strong warm tint.
       love.graphics.setBlendMode("alpha", "alphamultiply")
-      love.graphics.setColor(1.0, 0.86, 0.40, 0.96)
+      love.graphics.setColor(1.0, 0.86, 0.40, 0.98)
       love.graphics.draw(image, quad, x, y)
 
-      -- Then make only the tile's non-black pixels emit a little extra light.
-      -- Additive drawing preserves the black frame because black adds nothing.
+      -- Then make the pane's brighter pixels emit extra warm light.
       love.graphics.setBlendMode("add", "alphamultiply")
-      love.graphics.setColor(1.0, 0.52, 0.08, 0.38)
+      love.graphics.setColor(1.0, 0.58, 0.10, 0.46)
       love.graphics.draw(image, quad, x, y)
     end)
 
