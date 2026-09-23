@@ -17,12 +17,12 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Install Lua
+      - name: Install Lua tooling
         shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y lua5.4
+          sudo apt-get install -y lua5.4 luajit
 
       - name: Validate sources
         shell: bash
@@ -31,6 +31,10 @@ jobs:
           luac5.4 -p main.lua
           find src -type f -name '*.lua' -print0 | sort -z | xargs -0 -n1 luac5.4 -p
           python3 -m json.tool manifest.json >/dev/null
+          git clone --depth 1 --branch dev https://github.com/bryanthaboi/gen1recomp.git /tmp/gen1recomp
+          # The ROM-free fixture produces advisory MK305 warnings for files whose
+          # names overlap generated datasets, but loader/schema/API errors fail.
+          python3 /tmp/gen1recomp/tools/modkit.py validate "$GITHUB_WORKSPACE" --base fixture
 
       - name: Read release tag
         shell: bash
