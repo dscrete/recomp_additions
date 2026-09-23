@@ -7,6 +7,8 @@ return function(mod, ctx)
     return n
   end
 
+  local STATUS_BELIEVER_TAGS = { "GAMBLER", "LAVENDER", "FISHER", "ELECTRICIAN" }
+
   mod.content.screens:register(ctx.SCREEN_ID, {
     new = function(game)
       local Font = mod.ui.Font
@@ -37,6 +39,7 @@ return function(mod, ctx)
         local mutationText = #mutations > 0 and table.concat(mutations, ",") or "NONE"
         local rep = ctx.reputation()
         local mood = ctx.worldMoodState()
+        local superstition = ctx.superstition(game, { believerTags = STATUS_BELIEVER_TAGS })
         Font.draw("MOOD " .. tostring(mood.id) .. " x" .. tostring(mood.intensity or 1), 8, 20)
         Font.draw("ROCKET " .. tostring(math.floor(ctx.getHeat() + 0.5)), 8, 32)
         Font.draw("RUMOR " .. ctx.truncate(rumor and rumor.id or "NONE", 11), 8, 44)
@@ -45,7 +48,7 @@ return function(mod, ctx)
         Font.draw("MUT " .. ctx.truncate(mutationText, 13), 8, 80)
         Font.draw(("BTL %d CAT %d"):format(tonumber(rep.battles) or 0, tonumber(rep.catches) or 0), 8, 92)
         Font.draw("MUSEUM " .. tostring(ctx.exhibitCount()), 8, 104)
-        Font.draw("PARTY " .. ctx.truncate(ctx.superstition(game), 11), 8, 116)
+        Font.draw("PARTY " .. ctx.truncate(superstition, 11), 8, 116)
         Font.draw("A:NEXT  B:EXIT", 8, 132)
       end
 
@@ -61,16 +64,16 @@ return function(mod, ctx)
         local anomaly = mod.save:get("last_anomaly") or ctx.runtime.lastWildAnomaly
         local mood = ctx.worldMoodState()
         Font.draw("SCHEMA " .. tostring(mod.save:get("schema_version", 0)), 8, 20)
-        Font.draw("SEED " .. ctx.truncate(ctx.runSeed(), 12), 8, 32)
-        Font.draw("DIR " .. tostring(math.floor(tonumber(director.budget) or 0)) .. " " .. ctx.truncate(director.lastEvent or "NONE", 8), 8, 44)
-        Font.draw("HEAT " .. tostring(tier), 8, 56)
-        Font.draw("RUMORS " .. tostring(#ctx.activeRumors()), 8, 68)
-        Font.draw(("LEGENDS %d/%d"):format(discovered, countPairs(ctx.legendDefs)), 8, 80)
-        Font.draw("ECO SPECIES " .. tostring(countPairs(ecoMap)), 8, 92)
-        Font.draw("MOOD P " .. tostring(math.floor(tonumber(mood.pressure) or 0)), 8, 104)
-        Font.draw("CON " .. ctx.truncate(traveler and traveler.mapId or "NONE", 12), 8, 116)
-        Font.draw("ANOM " .. ctx.truncate(anomaly and (anomaly.traits and anomaly.traits[1] or anomaly.id) or "NONE", 11), 8, 128)
-        Font.draw("A:NEXT  B:EXIT", 8, 140)
+        Font.draw("SEED " .. ctx.truncate(ctx.runSeed(), 12), 8, 30)
+        Font.draw("DIR " .. tostring(math.floor(tonumber(director.budget) or 0)) .. " " .. ctx.truncate(director.lastEvent or "NONE", 8), 8, 40)
+        Font.draw("HEAT " .. tostring(tier), 8, 50)
+        Font.draw("RUMORS " .. tostring(#ctx.activeRumors()), 8, 60)
+        Font.draw(("LEGENDS %d/%d"):format(discovered, countPairs(ctx.legendDefs)), 8, 70)
+        Font.draw("ECO SPECIES " .. tostring(countPairs(ecoMap)), 8, 80)
+        Font.draw("MOOD P " .. tostring(math.floor(tonumber(mood.pressure) or 0)), 8, 90)
+        Font.draw("CON " .. ctx.truncate(traveler and traveler.mapId or "NONE", 12), 8, 100)
+        Font.draw("ANOM " .. ctx.truncate(anomaly and (anomaly.traits and anomaly.traits[1] or anomaly.id) or "NONE", 11), 8, 110)
+        Font.draw("A:NEXT  B:EXIT", 8, 132)
       end
 
       local function drawPokemon()
@@ -88,16 +91,16 @@ return function(mod, ctx)
         local relCount = countPairs(rec and rec.relationships)
         local species = ctx.speciesOf(mon) or "UNKNOWN"
         Font.draw(("%d/%d %s"):format(self.monIndex, #party, ctx.truncate(species, 10)), 8, 20)
-        Font.draw("ID " .. ctx.truncate(rec and rec.uid or "NONE", 15), 8, 32)
-        Font.draw("PERS " .. ctx.truncate(rec and rec.personality or "NONE", 12), 8, 44)
-        Font.draw("TITLES " .. tostring(titleCount), 8, 56)
-        Font.draw("REL " .. tostring(relCount), 8, 68)
-        Font.draw("MAPS " .. tostring(rec and rec.stats and rec.stats.mapsVisited or 0), 8, 80)
-        Font.draw("KOS " .. tostring(rec and rec.stats and rec.stats.kos or 0), 8, 92)
-        Font.draw("CRITS " .. tostring(rec and rec.stats and rec.stats.crits or 0), 8, 104)
-        Font.draw("MOVES " .. tostring(rec and rec.stats and rec.stats.movesUsed or 0), 8, 116)
-        Font.draw("< > MON  A:NEXT", 8, 128)
-        Font.draw("B:EXIT", 8, 140)
+        Font.draw("ID " .. ctx.truncate(rec and rec.uid or "NONE", 15), 8, 30)
+        Font.draw("PERS " .. ctx.truncate(rec and rec.personality or "NONE", 12), 8, 40)
+        Font.draw("TITLES " .. tostring(titleCount), 8, 50)
+        Font.draw("REL " .. tostring(relCount), 8, 60)
+        Font.draw("MAPS " .. tostring(rec and rec.stats and rec.stats.mapsVisited or 0), 8, 70)
+        Font.draw("KOS " .. tostring(rec and rec.stats and rec.stats.kos or 0), 8, 80)
+        Font.draw("CRITS " .. tostring(rec and rec.stats and rec.stats.crits or 0), 8, 90)
+        Font.draw("MOVES " .. tostring(rec and rec.stats and rec.stats.movesUsed or 0), 8, 100)
+        Font.draw("< > MON", 8, 116)
+        Font.draw("A:NEXT  B:EXIT", 8, 132)
       end
 
       function state:draw()
