@@ -27,7 +27,7 @@ This document maps the original expansion ideas to the current implementation. "
 | Unreliable map / travel advice | Implemented | Rotating deliberately unhelpful tips are generated on map changes/director events. |
 | Pokémon achievements / titles | Implemented foundation | Titles currently include caught, evolved, level 50, 10 crits, 50 KOs, 100 moves and 5000 cumulative damage. |
 | NPC memory contagion / reputation | Implemented foundation | NPC interaction counts plus global battle/catch/blackout/story-change reputation stats are persisted for dialogue conditions. |
-| Kanto After Dark | Implemented foundation | Gen 1 uses a step-based DAY/NIGHT cycle with named duration presets. Outdoor world palette zones shift to a clearly moonlit blue/navy ramp at NIGHT while normal UI and indoor maps remain substantially unchanged; ADVANCED color mode receives a world-canvas-only grade. DAY/NIGHT transitions briefly announce themselves without blocking play. Gameplay logic consumes semantic time-of-day, not the visual effect. Future Gold/Gen 2 support defers to the game's native MORN/DAY/NITE clock and presentation. |
+| Kanto After Dark | Implemented foundation | Gen 1 owns a 24-hour semantic clock with Real Time (device-local), Accelerated named presets, Fixed Day and Fixed Night sources. Outdoor world palette zones shift to a moonlit blue/navy ramp at NIGHT while normal UI/interiors remain readable. Battle Art SYNC mode consumes the same hour and keeps ownership of its voxel lighting. Other mods can consume the exported time API. Future Gold/Gen 2 defers to native time/presentation. |
 | Anti-randomizer | Implemented | Each run selects three persistent mutations from a small pool that subtly change trainers, wild levels, rumors, Rocket heat or anomalies. |
 
 ## Collision policy
@@ -37,7 +37,7 @@ The systems layer intentionally owns only a small number of engine seams:
 - `encounter.species` is the sole wild-species arbitration point for rumors, night rules, ecology, mutations and anomalies.
 - `trainer.party` handles the small dynamic trainer-level response.
 - `trainer.before_battle` only enforces an already-staged bet.
-- `world.tod` supplies the synthetic step-based clock on Gen 1 only. Later generations keep their native time-of-day result untouched.
+- `world.tod` supplies Kanto Expansion's authoritative Gen 1 clock. Its source may be device-local real time, accelerated steps, or a fixed override. Later generations keep their native time-of-day result untouched.\n- `src/compat.lua` adapts compatible renderers without owning their pixels. Battle Art's `SYNC` path receives the expansion hour through its exported `DayNight.hours` seam; explicit Battle Art time modes remain overrides.
 - `render.compose` performs the optional Gen 1 world-only night palette treatment while leaving the UI pass alone; `render.hud` draws the short transition notice. Both are inactive outside Gen 1 and do not own gameplay state.
 - `ui.start_menu.items` adds one Expansion entry.
 
@@ -49,6 +49,7 @@ Other content can depend on this mod and use `mod.find("gen1recomp_expansion").e
 
 ```text
 status(game)
+time.hour() / time.period() / time.fraction() / time.source()
 pokemonRecord(mon)
 awardPokemonTitle(mon, id)
 trainerMemory(npcId)
