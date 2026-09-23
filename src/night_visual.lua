@@ -13,7 +13,13 @@ local NIGHT_RAMP = {
 -- OVERWORLD tile $31 is the exterior window graphic in Red/Blue's outdoor
 -- tileset. At night it gets its own warm four-shade palette so the building
 -- can stay moonlit while the glass reads as illuminated from inside.
-local WINDOW_TILES = { [0x31] = true }
+local WINDOW_TILES = {
+  -- Standard town-house facade windows. Pallet's two houses use these
+  -- component tiles rather than the standalone $31 window graphic.
+  [0x0B] = true, [0x0C] = true,
+  [0x28] = true, [0x29] = true,
+  [0x31] = true,
+}
 local WINDOW_RAMP = {
   { 255, 250, 210 },
   { 255, 218, 122 },
