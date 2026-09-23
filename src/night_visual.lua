@@ -1,14 +1,13 @@
 -- Lightweight Gen 1 presentation fallback for the synthetic day/night cycle.
 -- Gameplay time-of-day is owned by world.tod; this module only communicates
 -- NIGHT visually. Gen 2/Gold has native time-of-day presentation, so the
--- fallback deliberately retires itself as soon as the renderer reports a
--- generation other than 1.
+-- fallback never requests output ownership there.
 return function(mod, ctx)
   local function active()
+    if mod.generation ~= 1 then return false end
     if not ctx.feature("night_cycle") or not ctx.feature("night_visual") then return false end
     if ctx.runtime.battle then return false end
-    if ctx.runtime.generation ~= nil and ctx.runtime.generation ~= 1 then return false end
-    return ctx.currentTodFromSteps() == "NIGHT"
+    return ctx.currentTod() == "NIGHT"
   end
 
   -- render.output is gated because asking the engine for a composed output
@@ -20,7 +19,6 @@ return function(mod, ctx)
 
   mod.hooks:wrap("render.output", function(next, frame)
     if type(frame) ~= "table" then return next(frame) end
-    if frame.generation ~= nil then ctx.runtime.generation = frame.generation end
 
     -- Let earlier/lower-priority output owners render first. If nobody handled
     -- the frame, draw the engine's finished composite ourselves before adding
