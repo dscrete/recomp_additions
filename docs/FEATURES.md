@@ -27,7 +27,7 @@ This document maps the original expansion ideas to the 0.1.0 implementation. "Fo
 | Unreliable map / travel advice | Implemented | Rotating deliberately unhelpful tips are generated on map changes/director events. |
 | Pokémon achievements / titles | Implemented foundation | Titles currently include caught, evolved, level 50, 10 crits, 50 KOs, 100 moves and 5000 cumulative damage. |
 | NPC memory contagion / reputation | Implemented foundation | NPC interaction counts plus global battle/catch/blackout/story-change reputation stats are persisted for dialogue conditions. |
-| Kanto After Dark | Implemented foundation | Step-based DAY/NIGHT cycle via `world.tod`; content can register night-specific encounter replacements. No shader/palette work required. |
+| Kanto After Dark | Implemented foundation | Gen 1 uses a step-based DAY/NIGHT cycle with named duration presets and an optional mild cool/dark finished-frame veil at NIGHT. Gameplay logic consumes semantic time-of-day, not the visual effect. Future Gold/Gen 2 support defers to the game's native MORN/DAY/NITE clock and native presentation instead of running the Gen 1 fallback. |
 | Anti-randomizer | Implemented | Each run selects three persistent mutations from a small pool that subtly change trainers, wild levels, rumors, Rocket heat or anomalies. |
 
 ## Collision policy
@@ -37,7 +37,8 @@ The systems layer intentionally owns only a small number of engine seams:
 - `encounter.species` is the sole wild-species arbitration point for rumors, night rules, ecology, mutations and anomalies.
 - `trainer.party` handles the small dynamic trainer-level response.
 - `trainer.before_battle` only enforces an already-staged bet.
-- `world.tod` supplies the optional step-based night cycle while respecting a non-`DAY` value returned by another mod downstream.
+- `world.tod` supplies the synthetic step-based clock on Gen 1 only. Later generations keep their native time-of-day result untouched.
+- `render.output_enabled` / `render.output` provide the optional Gen 1 night visual fallback; they are inactive outside Gen 1 and do not own gameplay state.
 - `ui.start_menu.items` adds one Expansion entry.
 
 This is preferable to giving every feature its own wrapper and relying on middleware ordering for correctness.
