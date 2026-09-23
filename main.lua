@@ -13,6 +13,7 @@ local MODULES = {
   "src/knowledge.lua",
   "src/ui.lua",
   "src/api.lua",
+  "src/hardening.lua",
 }
 
 local function loadModule(mod, path)
