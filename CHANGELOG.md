@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.1.8
+
+- Corrected Pallet Town's actual 2x2 house-window tile IDs (`$0B/$0C/$1B/$1C`).
+- Added a true-color/GBC night path that redraws the real window tile art after the blue night grade and adds a warm additive boost, so lit windows remain visibly bright instead of being darkened with the rest of the map.
+- Left Battle Art untouched when its render pipeline owns the world.
+
 ## 0.1.7
 
 - Fixed 2D lit-window placement to use the actual world-pass camera and canvas dimensions, so Pallet Town window palette zones reach the rendered window pixels.
