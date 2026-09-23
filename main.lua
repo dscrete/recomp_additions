@@ -10,6 +10,7 @@ local MODULES = {
   "src/compat.lua",
   "src/night_visual.lua",
   "src/pokemon.lua",
+  "src/knowledge.lua",
   "src/ui.lua",
   "src/api.lua",
 }
