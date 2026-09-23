@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.2.1
+
+- Completed the systems-hardening pass with a final reusable contract layer rather than adding authored route/NPC/story content.
+- Added personality expression scoring/tiers across the ten personality archetypes while keeping personality effects presentation-facing instead of silently modifying battle math.
+- Extended title evaluation to support condition-only as well as metric-based achievement definitions.
+- Made strange encounters preserve complete encounter payloads and support opt-in compatible multi-trait anomalies, fixing metadata loss for visible Water/Wilds encounters.
+- Standardized built-in run-mutation modifier keys for future content consumers.
+- Hardened battle-bet contracts with validation, reservation/refund effects, battle tokens, recoverable settlement failures and explicit retry support.
+- Added declarative curse stage effects, cross-community memory propagation helpers, and generic current-boss/eligibility queries for the Bootleg League framework.
+
 ## 0.2.0
 
 - Reworked the expansion foundations into reusable content-ready systems rather than isolated counters/state flags.
