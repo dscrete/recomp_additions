@@ -136,7 +136,7 @@ return function(mod, ctx)
     local rate = tonumber(mod.options:get("anomaly_rate")) or 2
     if ctx.worldMood() == "RESTLESS" then rate = rate + 2 end
     if ctx.hasMutation("ODD_SPECIMENS") then rate = rate + 2 end
-    if ctx.hasMutation("NIGHT_OWLS") and ctx.currentTodFromSteps() == "NIGHT" then rate = rate + 2 end
+    if ctx.hasMutation("NIGHT_OWLS") and ctx.currentTod() == "NIGHT" then rate = rate + 2 end
     return ctx.clamp(rate, 0, 30)
   end
 
@@ -152,7 +152,7 @@ return function(mod, ctx)
       out.species = rumor.replacementSpecies
     end
 
-    if ctx.feature("night_cycle") and ctx.currentTodFromSteps() == "NIGHT" then
+    if ctx.feature("night_cycle") and ctx.currentTod() == "NIGHT" then
       out = applyReplacementRules(out, hookCtx, ctx.nightRules)
     end
     if ctx.feature("ecology") then out = applyReplacementRules(out, hookCtx, ctx.ecologyRules) end
@@ -172,9 +172,12 @@ return function(mod, ctx)
 
   mod.hooks:wrap("world.tod", function(next, tod, hookCtx)
     local base = next(tod, hookCtx)
+    -- Gold/Gen 2 already owns a real MORN/DAY/NITE clock and palette system.
+    -- Never replace that with Gen 1's synthetic step clock.
+    if mod.generation ~= 1 then return base end
     if not ctx.feature("night_cycle") then return base end
     if base ~= nil and base ~= "DAY" then return base end
-    return ctx.currentTodFromSteps()
+    return ctx.currentTod()
   end)
 
   ctx.registerDirectorEvent({
