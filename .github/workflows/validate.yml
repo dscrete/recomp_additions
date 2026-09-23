@@ -1,0 +1,37 @@
+name: Validate mod
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Lua
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y lua5.4
+
+      - name: Compile Lua sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          luac5.4 -p main.lua
+          find src -type f -name '*.lua' -print0 | sort -z | xargs -0 -n1 luac5.4 -p
+
+      - name: Validate manifest JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m json.tool manifest.json >/dev/null
