@@ -1,12 +1,12 @@
 # Kanto Expansion
 
-An experimental, systems-first expansion layer for **Gen1Recomp**. The goal is to make Kanto feel reactive and slightly unpredictable without replacing the original game or requiring renderer/shader-level work.
+A systems-first expansion layer for **Gen1Recomp**. The goal is to make Kanto reactive, persistent and slightly unpredictable while keeping the original game recognizable.
 
-This repository is the mod folder itself. It targets Gen 1 through the current Gen1Recomp **API 2** mod interface.
+This repository is the mod folder itself and targets Gen 1 through Gen1Recomp's API 2 mod interface.
 
 ## Install
 
-Place the repository contents in a single mod directory so the layout is:
+Place the repository contents in one mod directory:
 
 ```text
 mods/
@@ -18,97 +18,116 @@ mods/
         ├── extras.lua
         ├── trainers.lua
         ├── world.lua
+        ├── compat.lua
         ├── night_visual.lua
         ├── pokemon.lua
+        ├── knowledge.lua
         ├── ui.lua
         └── api.lua
 ```
 
-Enable **Kanto Expansion** in the Gen1Recomp mod manager. The manifest is marked experimental while the systems are still being filled with content.
+Enable **Kanto Expansion** in the Gen1Recomp mod manager.
 
-## What exists in 0.1.2
+## What v0.2.0 establishes
 
-The current pass implements reusable mechanics rather than filling every route with finished authored content:
+The 0.2.0 pass hardens the mechanics underneath the planned content. The systems are intended to accept substantially different future events without requiring feature-specific engine patches.
 
-- centralized **World Director** with cooldowns and weighted events
-- persistent **world moods / luck states**
-- lightweight **run mutations** (the anti-randomizer idea)
-- **rumors**, bulletin headlines, and unreliable travel tips
-- **After Dark** world clock with device-local real-time, accelerated named presets, and fixed day/night modes
-- Gen 1 **moonlit night palette treatment** on outdoor maps, with UI/interiors kept readable
-- brief non-blocking **night/morning transition notices**
-- one centralized wild encounter arbiter for rumors, ecology, night rules, run mutations, and strange encounters
-- **route ecology pressure** tracking with registerable replacement rules
-- rare **strange wild encounters** with boosted levels
-- **trainer memory / grudges**, battle history, trainer-class notes, and trainer archaeology state
-- **battle bet** mechanics for pre-agreed party restrictions
-- **Rocket heat**
-- per-Pokémon **personality**, battle history, titles, and partner/rival relationship counters
-- **Reverse Pokédex** observations about the player
-- party-based **Pokémon superstitions**
-- **museum exhibit** unlock state (fossils are wired as the first automatic exhibits)
-- **urban legend** discovery/progression state and director whispers
-- **traveling NPC / con artist itinerary** state
-- **bootleg League / hidden boss** progression registry
-- **cursed-object** state machine
-- an **EXPANSION** Start-menu screen showing the main live systems
-- a public `mod.exports` API so later content can register rumors, ecology rules, night rules, legends, travelers, bosses, bulletins, bets, and director events without adding competing engine hooks
+- **World Director:** event categories, pacing budget, event/global cooldowns, recent-category suppression, category suppression, reservations, conditions and persistent history.
+- **Deterministic run state:** a persistent run seed plus independent RNG streams for mutations, rumors, moods, ecology/anomalies and Director decisions, so adding a roll to one subsystem does not reshuffle unrelated systems.
+- **Save migrations:** explicit schema migrations for persistent data shapes.
+- **World moods:** structured mood state with intensity, pressure, causes, duration and standard system modifiers.
+- **Run mutations:** weighted definition registry with categories, incompatibility support and persistent selection.
+- **Rumors:** source, credibility, strength, truth state, age, map spread, confidence loss, distortion, expiry and resolution.
+- **Bulletin boards:** per-location feeds with authors, priority, conditions and expiry.
+- **Travel advice:** persistent claims with source, topic, confidence, truth/disproven state and expiry.
+- **Route ecology:** per-map/species pressure, catches/defeats/flees, bounded pressure, natural recovery, abundance, optional migration links and threshold-based encounter replacement.
+- **Wild anomalies:** definition-driven encounter traits rather than a hard-coded level flag. `LEVEL_SURGE` remains the first built-in trait.
+- **Wilds of Kanto integration:** visible land/water Pokémon use the same rumor, night, ecology, mutation and anomaly arbitration as classic encounters; anomaly identity follows the specific visible Pokémon into battle.
+- **Trainer memory/grudges:** resentment, respect, embarrassment, confidence, decay, tiers, encounter/battle history and bounded party adaptation.
+- **Trainer archaeology:** chronological trainer snapshots instead of only a stage counter.
+- **Trainer knowledge/notes:** class knowledge records, observations, unlock thresholds and confidence-ready note definitions.
+- **Battle bets:** proposed/accepted/in-battle/resolved/cancelled contract lifecycle, battle identity, party restrictions and one-shot settlement effects.
+- **Rocket heat:** global and regional heat, history, passive decay and named reaction tiers.
+- **Reputation/NPC memory:** reputation facets, witnessed community facts, NPC memory propagation and confidence degradation.
+- **Stable Pokémon identity:** every tracked Pokémon receives a persistent UID; party/box reconciliation preserves moved Pokémon and splits duplicate IDs created by clone/copy operations.
+- **Pokémon relationships:** directed individual-to-individual affinity/rivalry/trust records keyed by UID, while preserving the old species summary for compatibility.
+- **Pokémon personalities:** persistent personality plus an event-signal registry for content-defined expression.
+- **Titles/achievements:** definition-driven thresholds plus persistent unlock history.
+- **Reverse Pokédex:** priority-based observation definitions rather than one hard-coded conditional chain.
+- **Superstitions:** species rules can be scoped by believer/community tags and additional conditions.
+- **Museum:** staged exhibit records with discovery count, provenance and history.
+- **Urban legends:** state, clues, history, trigger-driven transitions, conditions, effects and explicit resolutions.
+- **Travelers/con artist:** persistent itinerary that avoids pointless same-town rerolls, plus encounter history, suspicion, alias and inventory state.
+- **Curses:** per-curse definitions, escalation stages, ownership/action history and cleansing state. A truly un-discardable physical item remains deferred until the engine exposes a discard interception seam.
+- **Bootleg League:** persistent gauntlet lifecycle with attempts, ordered bosses, failures and completions; trainers/location/rewards remain content.
+- **After Dark:** one authoritative 24-hour Gen 1 clock, schedule registry, 2D moonlit presentation, warm window/door-glass lighting across connected maps, and Battle Art SYNC interoperability.
+- **Diagnostics:** the `EXPANSION` Start-menu screen now has overview, system-state and per-Pokémon history pages.
 
-See [`docs/FEATURES.md`](docs/FEATURES.md) for the feature-by-feature status.
+See `docs/FEATURES.md` for the feature-by-feature system contract.
 
 ## Architecture
 
-`main.lua` only defines options and loads modules with `mod:read()` + the sandboxed `load()` supplied by Gen1Recomp. No engine-internal `require` calls or extra permissions are used.
+`main.lua` defines options and loads modules through `mod:read()` and sandboxed `load()`. Persistent expansion data stays in `mod.save`; individual Pokémon metadata stays under `mon.gen1Expansion`.
 
-The important design rule is that systems which can collide share one arbitration point. Wild encounter features all pass through one `encounter.species` wrapper, while timed/ambient events all pass through the World Director. This keeps future content from turning into a stack of hooks fighting over the same result.
+The important rule is **shared ownership of collision points**. Classic wild encounter changes pass through one `encounter.species` arbiter. Wilds of Kanto is adapted at its exported species-selection seams so it consumes the same semantics instead of creating a second rule set. Timed ambient events pass through the Director. Gen 1 time has one semantic clock and renderer-specific adapters consume it.
 
-Persistent global state lives in the mod's `mod.save` namespace. Per-Pokémon history is stored in one `mon.gen1Expansion` table.
+Content systems share lightweight condition/effect registries, deterministic RNG streams and explicit migrations. New content should register definitions instead of adding another low-level hook when an existing system already owns that concern.
 
-## Day/night options
+## Day/night
 
-`TIME SOURCE` defaults to **Real Time**, which follows the device's local clock. **Accelerated** uses the named step presets below, while **Fixed Day** and **Fixed Night** are useful overrides/testing modes. The accelerated cycle starts at 06:00 and completes a full 24-hour Kanto day across two preset lengths:
+`TIME SOURCE` supports:
 
-- Very Fast — 256 steps
-- Fast — 512 steps
-- Normal — 1024 steps
-- Long — 2048 steps
-- Very Long — 4096 steps
-- Marathon — 8192 steps
+- **Real Time** — device-local clock
+- **Accelerated** — step-driven 24-hour cycle
+- **Fixed Day** — 12:00
+- **Fixed Night** — 00:00
 
-`NIGHT VISUAL` controls the Gen 1 presentation independently of the semantic time-of-day system. At night, outdoor world palette zones are shifted toward a much more obvious moonlit blue/navy ramp while normal UI remains bright; ADVANCED color mode receives a world-canvas-only grade. Indoor maps are left substantially unchanged. When the cycle crosses a boundary, a short non-blocking `NIGHT HAS FALLEN` or `MORNING HAS COME` notice appears.
+Accelerated half-day presets are Very Fast (256), Fast (512), Normal (1024), Long (2048), Very Long (4096) and Marathon (8192) steps.
 
-When **Battle Art Voxel Fork** is installed, Kanto Expansion loads after it and adapts Battle Art's existing `SYNC` clock to the same Kanto hour. Battle Art therefore keeps ownership of its voxel sky, sun/moon, shadows, tint, and lit windows; its explicit DAY/NIGHT/DUSK/DAWN/CYCLE choices remain overrides. No Battle Art files are patched.\n\nOther mods can consume `mod.find(\"gen1recomp_expansion\").exports.time` (`hour`, `period`, `fraction`, `source`) instead of duplicating the clock. Future Gold/Silver support should use the target game's native `MORN` / `DAY` / `NITE` presentation instead of applying the Gen 1 fallback.
+`NIGHT VISUAL` affects only Gen 1 presentation. Outdoor 2D maps receive a cool moonlit grade while standard house windows and the glass portions of doors are restored as warm light sources. Connected maps are included, so lights remain emissive while visible across a map seam. UI and normal interiors remain readable.
 
-## Tagged development releases
+When **Battle Art Voxel Fork** is installed, its `SYNC` clock receives the same Kanto hour. Battle Art continues to own its sky, sun/moon, shadows, tint and voxel window lighting; its explicit DAY/NIGHT/DUSK/DAWN/CYCLE settings remain overrides.
 
-Releases are not generated for every implementation commit. A completed change set updates the `.release` marker once, and GitHub Actions packages that final `main` commit into an installable ZIP and creates the matching Git tag/release. The ZIP contains a single top-level `gen1recomp_expansion/` directory so it can be extracted directly into a `mods/` directory.
+Other mods can consume `mod.find("gen1recomp_expansion").exports.time` instead of creating another Gen 1 clock.
 
-While the mod remains experimental, these tagged builds are published as prereleases.
+## Compatibility
 
-## Deliberately deferred pieces
+The manifest optionally orders Kanto Expansion after:
 
-A few ideas have foundations but are not force-implemented yet because doing so now would be brittle or content-dependent:
+- `BATTLE_ART_VOXEL_FORK` for clock synchronization
+- `overworld_wild_spawns` for visible-encounter arbitration
 
-- **Cursed physical bag item:** the current public hook catalog does not expose an item-discard interception point. The curse state machine exists, but a truly "refuses to be thrown away" item should wait for an appropriate public seam rather than patching engine internals.
-- **Traveling con artist on-map NPC:** the itinerary system works, but actual spawn coordinates, sprite, dialogue, and map-safe placement are content decisions. Hard-coding them in the systems layer would create map conflicts immediately.
-- **Bootleg League:** boss registration/progression exists; the actual four trainers, location, dialogue, and rewards are authored content for the next pass.
-- **Battle-bet prompt:** the battle hook can enforce an agreed party scope. The dialogue/UI that offers and accepts a bet is intentionally left to trainer-specific content instead of interrupting every trainer encounter.
-- **Museum room changes:** exhibit unlocks are tracked now; visible museum object/text changes need the concrete exhibit layout/content pass.
+Both adapters fail closed when the peer mod or expected export is absent. They restore wrapped exports on quit when still owned by this mod.
 
-One area worth validating carefully in-game is custom per-Pokémon metadata through every lifecycle path (PC deposit/withdraw, evolution, trading/link flows). The design keeps all metadata under one field so it can be migrated cleanly if a specific path needs special handling.
+Sprite-only mods, shiny battle presentation and menu-icon mods generally operate on different surfaces. The areas most worth cross-testing are other encounter overhauls, trainer-scaling mods, full world render pipelines and mods that copy Pokémon tables.
+
+## Extension API
+
+`mod.find("gen1recomp_expansion").exports` now reports `api = 2`. The API exposes the clock/schedules, Director, RNG streams, Pokémon identity/history/relationships/titles, trainer memory/knowledge, rumors, boards, advice, ecology, anomalies, legends, travelers, museum, bets, League state, curses, Rocket heat, observations, superstitions, mutations, reputation and generic condition/effect registries.
+
+Consumers should check the exported API version before depending on newer contracts.
 
 ## Validation
 
-For an engine source checkout, run Gen1Recomp's normal mod validator from the engine root:
+Every push now runs a GitHub Actions validation workflow that compiles `main.lua` and every `src/*.lua` file with Lua 5.4 and validates `manifest.json`. The tagged-release workflow repeats those checks before packaging, so a syntax-invalid release is not produced.
 
-```bash
-python3 tools/modkit.py validate /path/to/gen1recomp_expansion --strict --base auto
-```
+A real Gen1Recomp boot remains the authoritative runtime integration test. High-value manual checks for v0.2.0 are:
 
-The Lua modules have also been smoke-tested with a stubbed API for load, event, hook, persistence, encounter, trainer, and export behavior. A real Gen1Recomp boot is still the authoritative integration test.
+- existing save migration and new save initialization
+- PC deposit/withdraw followed by Pokémon UID/history inspection
+- two same-species party members retaining distinct UIDs/relationships
+- Wilds of Kanto visible land and water spawns with mutations/anomalies enabled
+- Battle Art SYNC versus explicit time modes
+- Pallet ↔ Route 1 night lighting across the connection seam
+- repeated/rematch trainer encounters for grudge decay/escalation
+- long-step sessions for mood, Director, rumor, traveler, ecology and Rocket-heat decay
 
-For night presentation specifically, test an outdoor town/route, an indoor map, a menu/dialogue over the overworld, SGB and ADVANCED color modes, a battle transition, and both DAY→NIGHT and NIGHT→DAY boundaries.
+## Deliberately content-deferred
+
+The systems can now represent the planned features, but authored placements/dialogue/fights are intentionally separate work: physical bulletin boards, con-artist NPC placement, legend clue chains, ecology tables, night encounter tables, trainer arcs/notes, bet offers/rewards, museum object changes, curse quest content and the four Bootleg League fights.
+
+The cursed physical bag item itself remains technically deferred because the public API still lacks item-discard interception.
 
 ## Current version
 
-`0.1.2` — authoritative Gen 1 world clock with real-time/accelerated modes and Battle Art voxel clock compatibility.
+`0.2.0` — system-hardening baseline for the expansion framework.
