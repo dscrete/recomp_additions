@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.1.2
+
+- Added a Gen 1 time-source selector: device-local Real Time, Accelerated, Fixed Day, or Fixed Night.
+- Expanded the accelerated presets into a continuous 24-hour Kanto clock while preserving the existing named speeds.
+- Exported a read-only `time` API (`hour`, `period`, `fraction`, `source`) for renderer and content interoperability.
+- Added optional Battle Art Voxel Fork integration: when Battle Art is in SYNC mode, its existing sky, sun/moon, shadows, tint, and window lighting consume Kanto Expansion's authoritative hour. Explicit Battle Art time modes remain untouched.
+- Kept later-generation native time authoritative and avoided globally spoofing the device clock.
+
 ## 0.1.1
 
 - Replaced the raw day/night step control with named duration presets from Very Fast through Marathon.
