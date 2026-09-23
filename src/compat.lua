@@ -6,7 +6,7 @@
 -- DayNight.hours seam. Its explicit time modes remain Battle Art overrides.
 return function(mod, ctx)
   local BATTLE_ART_ID = "BATTLE_ART_VOXEL_FORK"
-  local installed, dayNight, originalHours = false, nil, nil
+  local installed, dayNight, originalHours, wrappedHours = false, nil, nil, nil
 
   local function installBattleArt()
     if installed or mod.generation ~= 1 then return installed end
