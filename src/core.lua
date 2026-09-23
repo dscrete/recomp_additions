@@ -28,6 +28,7 @@ return function(mod)
       currentTrainerParty = nil,
       battle = nil,
       lastWildAnomaly = nil,
+      generation = nil,
     },
     rumorDefs = {},
     directorDefs = {},
@@ -162,7 +163,7 @@ return function(mod)
 
   function ctx.currentTodFromSteps()
     if not ctx.feature("night_cycle") then return "DAY" end
-    local length = math.max(256, tonumber(mod.options:get("night_cycle_steps")) or 1024)
+    local length = math.max(256, tonumber(mod.options:get("night_cycle_preset")) or 1024)
     return (math.floor(ctx.runtime.steps / length) % 2 == 0) and "DAY" or "NIGHT"
   end
 
