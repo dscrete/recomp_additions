@@ -43,6 +43,9 @@ return function(mod, ctx)
       inRange = function(startHour, endHour) return ctx.timeInRange(startHour, endHour) end,
     },
 
+    registerSchedule = function(id, def) return ctx.registerSchedule(id, def) end,
+    scheduleActive = function(id, context) return ctx.scheduleActive(id, context) end,
+
     rng = {
       seed = function() return ctx.runSeed() end,
       next = function(stream, max) return ctx.nextRandom(max, stream) end,
@@ -70,6 +73,12 @@ return function(mod, ctx)
       arcs[npcId] = rec
       ctx.putTable("trainer_arcs", arcs)
       return rec
+    end,
+    registerTrainerNote = function(classKey, def) return ctx.registerTrainerNote(classKey, def) end,
+    trainerKnowledge = function(classKey) return (ctx.trainerKnowledge(classKey)) end,
+    trainerNotes = function(classKey) return ctx.trainerNotes(classKey) end,
+    recordTrainerObservation = function(classKey, key, amount, detail)
+      return ctx.recordTrainerObservation(classKey, key, amount, detail)
     end,
 
     reputation = function() return ctx.reputation() end,
