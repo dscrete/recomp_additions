@@ -50,6 +50,10 @@ return function(mod, ctx)
   local wildsPick, wildsWater, originalPick, wrappedPick
   local originalWaterPick, wrappedWaterPick
   local wildsLogic
+  local originalTrySpawn, wrappedTrySpawn
+  local originalTrySpawnWater, wrappedTrySpawnWater
+  local originalStartBattle, wrappedStartBattle
+  local currentSpawnContext
 
   local function applyExternalRule(out, mapId, ruleBook, ecology)
     local mapRules = ruleBook and ruleBook[mapId]
@@ -103,16 +107,38 @@ return function(mod, ctx)
       if out.levelMax ~= nil then out.levelMax = ctx.clamp((tonumber(out.levelMax) or 1) + 1, 1, 100) end
     end
 
-    local beforeLevel = tonumber(out.level)
-    out = ctx.rollAnomaly(out, { mapId = mapId, kind = kind, source = "WILDS" })
-    local afterLevel = tonumber(out.level)
-    if beforeLevel and afterLevel and afterLevel ~= beforeLevel then
-      local delta = afterLevel - beforeLevel
-      if out.levelMin ~= nil then out.levelMin = ctx.clamp((tonumber(out.levelMin) or 1) + delta, 1, 100) end
-      if out.levelMax ~= nil then out.levelMax = ctx.clamp((tonumber(out.levelMax) or 1) + delta, 1, 100) end
+    -- Wilds picks visible Pokemon well before battle. Capture anomaly metadata
+    -- on that particular spawn instead of leaving ctx.runtime.lastWildAnomaly
+    -- global, which could otherwise be consumed by the wrong visible Pokemon.
+    if currentSpawnContext then
+      local beforeLevel = tonumber(out.level)
+      local previous = ctx.runtime.lastWildAnomaly
+      out = ctx.rollAnomaly(out, { mapId = mapId, kind = kind, source = "WILDS" })
+      local rolled = ctx.runtime.lastWildAnomaly
+      ctx.runtime.lastWildAnomaly = previous
+      if rolled and rolled ~= previous then
+        currentSpawnContext.anomaly = ctx.cloneTable(rolled)
+        -- rollAnomaly counts immediate classic encounters. A visible anomaly is
+        -- only counted when the player actually engages it.
+        ctx.addCounter("wild_anomalies", -1)
+      end
+      local afterLevel = tonumber(out.level)
+      if beforeLevel and afterLevel and afterLevel ~= beforeLevel then
+        local delta = afterLevel - beforeLevel
+        if out.levelMin ~= nil then out.levelMin = ctx.clamp((tonumber(out.levelMin) or 1) + delta, 1, 100) end
+        if out.levelMax ~= nil then out.levelMax = ctx.clamp((tonumber(out.levelMax) or 1) + delta, 1, 100) end
+      end
     end
+
     if out.speciesId ~= nil then out.speciesId = out.species end
     return out
+  end
+
+  local function finishSpawn(record, entity, spawnContext)
+    if type(record) == "table" and spawnContext and spawnContext.anomaly then
+      record._kxAnomaly = spawnContext.anomaly
+      if type(entity) == "table" then entity._kxAnomaly = spawnContext.anomaly end
+    end
   end
 
   local function installWilds()
@@ -128,6 +154,8 @@ return function(mod, ctx)
     if not okWater or type(water) ~= "table" then water = nil end
 
     wildsLogic = exports.logic
+    if type(wildsLogic) ~= "table" then return false end
+
     wildsPick, originalPick = picker, picker.pick
     wrappedPick = function(encDef, rng, kind)
       return transformWildsEncounter(originalPick(encDef, rng, kind), kind or "grass")
@@ -142,6 +170,51 @@ return function(mod, ctx)
       water.pickForZone = wrappedWaterPick
     end
 
+    if type(wildsLogic.trySpawn) == "function" then
+      originalTrySpawn = wildsLogic.trySpawn
+      wrappedTrySpawn = function(self, game, opts)
+        local previous = currentSpawnContext
+        local spawnContext = {}
+        currentSpawnContext = spawnContext
+        local record, err, entity = originalTrySpawn(self, game, opts)
+        currentSpawnContext = previous
+        finishSpawn(record, entity, spawnContext)
+        return record, err, entity
+      end
+      wildsLogic.trySpawn = wrappedTrySpawn
+    end
+
+    if type(wildsLogic.trySpawnWater) == "function" then
+      originalTrySpawnWater = wildsLogic.trySpawnWater
+      wrappedTrySpawnWater = function(self, game, opts)
+        local previous = currentSpawnContext
+        local spawnContext = {}
+        currentSpawnContext = spawnContext
+        local record, err, entity = originalTrySpawnWater(self, game, opts)
+        currentSpawnContext = previous
+        finishSpawn(record, entity, spawnContext)
+        return record, err, entity
+      end
+      wildsLogic.trySpawnWater = wrappedTrySpawnWater
+    end
+
+    if type(wildsLogic._startBattle) == "function" then
+      originalStartBattle = wildsLogic._startBattle
+      wrappedStartBattle = function(self, record)
+        local previous = ctx.runtime.lastWildAnomaly
+        local anomaly = type(record) == "table" and record._kxAnomaly or nil
+        ctx.runtime.lastWildAnomaly = anomaly
+        if anomaly then ctx.addCounter("wild_anomalies", 1) end
+        local result = originalStartBattle(self, record)
+        if result == false then
+          if anomaly then ctx.addCounter("wild_anomalies", -1) end
+          ctx.runtime.lastWildAnomaly = previous
+        end
+        return result
+      end
+      wildsLogic._startBattle = wrappedStartBattle
+    end
+
     wildsInstalled = true
     mod.log:info("Wilds of Kanto visible encounters are using Kanto Expansion arbitration")
     return true
@@ -152,9 +225,22 @@ return function(mod, ctx)
     if wildsWater and originalWaterPick and wildsWater.pickForZone == wrappedWaterPick then
       wildsWater.pickForZone = originalWaterPick
     end
+    if wildsLogic and originalTrySpawn and wildsLogic.trySpawn == wrappedTrySpawn then
+      wildsLogic.trySpawn = originalTrySpawn
+    end
+    if wildsLogic and originalTrySpawnWater and wildsLogic.trySpawnWater == wrappedTrySpawnWater then
+      wildsLogic.trySpawnWater = originalTrySpawnWater
+    end
+    if wildsLogic and originalStartBattle and wildsLogic._startBattle == wrappedStartBattle then
+      wildsLogic._startBattle = originalStartBattle
+    end
     wildsInstalled = false
     wildsPick, wildsWater, originalPick, wrappedPick = nil, nil, nil, nil
-    originalWaterPick, wrappedWaterPick, wildsLogic = nil, nil, nil
+    originalWaterPick, wrappedWaterPick = nil, nil
+    originalTrySpawn, wrappedTrySpawn = nil, nil
+    originalTrySpawnWater, wrappedTrySpawnWater = nil, nil
+    originalStartBattle, wrappedStartBattle = nil, nil
+    wildsLogic, currentSpawnContext = nil, nil
   end
 
   -- optional_dependencies guarantees supported peers load first when present.
