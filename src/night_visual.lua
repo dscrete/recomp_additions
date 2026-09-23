@@ -10,21 +10,18 @@ local NIGHT_RAMP = {
   { 8, 12, 32 },
 }
 
--- OVERWORLD tile $31 is the exterior window graphic in Red/Blue's outdoor
--- tileset. At night it gets its own warm four-shade palette so the building
--- can stay moonlit while the glass reads as illuminated from inside.
+-- Pallet's standard house window is a 16x16 graphic assembled from these four
+-- OVERWORLD tiles. The previous guesses ($28/$29/$31) are roof/wall tiles and
+-- therefore never lit the actual panes.
 local WINDOW_TILES = {
-  -- Standard town-house facade windows. Pallet's two houses use these
-  -- component tiles rather than the standalone $31 window graphic.
   [0x0B] = true, [0x0C] = true,
-  [0x28] = true, [0x29] = true,
-  [0x31] = true,
+  [0x1B] = true, [0x1C] = true,
 }
 local WINDOW_RAMP = {
-  { 255, 250, 210 },
-  { 255, 218, 122 },
-  { 196, 126, 48 },
-  { 74, 42, 24 },
+  { 255, 252, 218 },
+  { 255, 222, 118 },
+  { 218, 142, 44 },
+  { 72, 40, 20 },
 }
 
 return function(mod, ctx)
@@ -91,41 +88,44 @@ return function(mod, ctx)
     return changed
   end
 
-  local function addLitWindowZones(frame)
+  local function worldView(frame)
     local game = ctx.runtime.game
     local world = game and (game.overworld or game.world)
     local map = world and world.map
+    if type(map) ~= "table" or not map.tileset
+      or map.tileset.id ~= "OVERWORLD" then return nil end
+
+    local canvas = frame and frame.worldCanvas
+    local viewW = canvas and canvas:getWidth() or 160
+    local viewH = canvas and canvas:getHeight() or 144
     local camera = world and world.camera
-    local zones = frame and frame.worldZones
-    if type(map) ~= "table" or type(zones) ~= "table"
-      or not map.tileset or map.tileset.id ~= "OVERWORLD" then return end
-
-    local blocks = map.tileset.blocks
-    if type(blocks) ~= "table" or type(map.blockAt) ~= "function" then return end
-
-    -- render.compose runs after the world pass. The authoritative camera for
-    -- that pass is frame.renderer's world view, but the live overworld camera
-    -- is not guaranteed to be exposed on the controller. Derive the same
-    -- camera origin from the player and actual world-canvas dimensions when
-    -- necessary, matching Camera:follow().
-    local viewW = frame.worldCanvas and frame.worldCanvas:getWidth() or 160
-    local viewH = frame.worldCanvas and frame.worldCanvas:getHeight() or 144
     local camX = camera and tonumber(camera.x) or nil
     local camY = camera and tonumber(camera.y) or nil
     if camX == nil or camY == nil then
       local player = world and world.player
       local px = player and tonumber(player.px)
       local py = player and tonumber(player.py)
-      if px == nil or py == nil then return end
+      if px == nil or py == nil then return nil end
+      -- src/render/Camera.lua: Camera:follow()
       camX = px - (viewW / 2 - 16)
       camY = py - (viewH / 2 - 8)
     end
-    camX, camY = math.floor(camX), math.floor(camY)
+    return world, map, math.floor(camX), math.floor(camY), viewW, viewH
+  end
+
+  local function eachVisibleWindow(frame, fn)
+    local _, map, camX, camY, viewW, viewH = worldView(frame)
+    if not map then return false end
+    local blocks = map.tileset.blocks
+    if type(blocks) ~= "table" or type(map.blockAt) ~= "function" then return false end
+
     local tx0 = math.max(0, math.floor(camX / 8))
     local ty0 = math.max(0, math.floor(camY / 8))
-    local tx1 = math.min((map.def.width or 0) * 4 - 1, math.floor((camX + viewW) / 8))
-    local ty1 = math.min((map.def.height or 0) * 4 - 1, math.floor((camY + viewH) / 8))
-
+    local tx1 = math.min((map.def.width or 0) * 4 - 1,
+                         math.floor((camX + viewW) / 8))
+    local ty1 = math.min((map.def.height or 0) * 4 - 1,
+                         math.floor((camY + viewH) / 8))
+    local found = false
     for ty = ty0, ty1 do
       local by, ciY = math.floor(ty / 4), ty % 4
       for tx = tx0, tx1 do
@@ -133,15 +133,23 @@ return function(mod, ctx)
         local block = blockId ~= nil and blocks[blockId + 1] or nil
         local tile = block and block[ciY * 4 + (tx % 4) + 1] or nil
         if WINDOW_TILES[tile] then
-          zones[#zones + 1] = {
-            x = tx * 8 - camX, y = ty * 8 - camY, w = 8, h = 8,
-            -- SGB/DMG source canvases are shade indices; this palette remaps
-            -- the window's white/light pixels to warm lamp colors.
-            colors = WINDOW_RAMP,
-          }
+          found = true
+          fn(map, tile, tx * 8 - camX, ty * 8 - camY)
         end
       end
     end
+    return found
+  end
+
+  local function addLitWindowZones(frame)
+    local zones = frame and frame.worldZones
+    if type(zones) ~= "table" then return end
+    eachVisibleWindow(frame, function(_, _, x, y)
+      zones[#zones + 1] = {
+        x = x, y = y, w = 8, h = 8,
+        colors = WINDOW_RAMP,
+      }
+    end)
   end
 
   local function tintTrueColorWorld(frame)
@@ -154,6 +162,51 @@ return function(mod, ctx)
     love.graphics.setColor(0.04, 0.10, 0.30, 0.34)
     love.graphics.rectangle("fill", 0, 0, canvas:getWidth(), canvas:getHeight())
     love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.setCanvas(previous)
+  end
+
+  -- GBC/ADVANCED color modes bake true color into the tileset atlas and return
+  -- an empty world-zone list, so palette zones cannot brighten the windows at
+  -- all. Redraw the *actual window tile art* after the blue night grade. That
+  -- bypasses the darkening for the panes, keeps their black outlines intact,
+  -- and adds a small warm additive boost so they read like Gold's lit windows.
+  local function drawTrueColorWindows(frame)
+    local canvas = frame and frame.worldCanvas
+    if not canvas or not love.graphics.setCanvas then return end
+    local previous = love.graphics.getCanvas and love.graphics.getCanvas() or nil
+    local previousMode, previousAlpha
+    if love.graphics.getBlendMode then
+      previousMode, previousAlpha = love.graphics.getBlendMode()
+    end
+
+    love.graphics.setCanvas(canvas)
+    love.graphics.setScissor(0, 0, canvas:getWidth(), canvas:getHeight())
+
+    eachVisibleWindow(frame, function(map, tile, x, y)
+      local tr = map.renderer
+      local image = tr and tr.image
+      local quad = tr and tr.quads and tr.quads[tile]
+      if not image or not quad then return end
+
+      -- First put the undarkened source tile back with a strong warm tint.
+      love.graphics.setBlendMode("alpha", "alphamultiply")
+      love.graphics.setColor(1.0, 0.86, 0.40, 0.96)
+      love.graphics.draw(image, quad, x, y)
+
+      -- Then make only the tile's non-black pixels emit a little extra light.
+      -- Additive drawing preserves the black frame because black adds nothing.
+      love.graphics.setBlendMode("add", "alphamultiply")
+      love.graphics.setColor(1.0, 0.52, 0.08, 0.38)
+      love.graphics.draw(image, quad, x, y)
+    end)
+
+    love.graphics.setColor(1, 1, 1, 1)
+    if previousMode then
+      love.graphics.setBlendMode(previousMode, previousAlpha)
+    else
+      love.graphics.setBlendMode("alpha", "alphamultiply")
+    end
+    love.graphics.setScissor()
     love.graphics.setCanvas(previous)
   end
 
@@ -186,22 +239,23 @@ return function(mod, ctx)
   mod.events:on("world.stepped", syncTodNotice)
 
   -- At this seam the engine has separate world and UI canvases. For the normal
-  -- SGB/OG palette path, recolor only the world zones and let the engine do its
-  -- ordinary composite. ADVANCED bakes true color into the world canvas and
-  -- therefore has no palette zones; use a world-canvas-only blue grade there.
+  -- SGB/OG palette path, recolor only the world zones. GBC/ADVANCED already
+  -- contains true-color pixels, so darken the canvas and redraw the authored
+  -- window graphics as warm light sources. A render pipeline (Battle Art) owns
+  -- its own lighting and is left completely untouched.
   mod.hooks:wrap("render.compose", function(next, renderer, frame)
     if not isNight() or ctx.runtime.battle or type(frame) ~= "table"
-      or frame.worldActive ~= true or not isOutdoor(ctx.runtime.game) then
+      or frame.worldActive ~= true or frame.worldOverride
+      or not isOutdoor(ctx.runtime.game) then
       return next()
     end
 
     local recolored = tintZones(frame.worldZones)
     if recolored then
-      -- Append after the broad moonlight zones: the renderer applies zones in
-      -- order, so authored window cells receive the warm lamp palette last.
       addLitWindowZones(frame)
     else
       tintTrueColorWorld(frame)
+      drawTrueColorWindows(frame)
     end
     return next()
   end)
