@@ -26,7 +26,7 @@ mods/
 
 Enable **Kanto Expansion** in the Gen1Recomp mod manager. The manifest is marked experimental while the systems are still being filled with content.
 
-## What exists in 0.1.1
+## What exists in 0.1.2
 
 The current pass implements reusable mechanics rather than filling every route with finished authored content:
 
@@ -34,7 +34,7 @@ The current pass implements reusable mechanics rather than filling every route w
 - persistent **world moods / luck states**
 - lightweight **run mutations** (the anti-randomizer idea)
 - **rumors**, bulletin headlines, and unreliable travel tips
-- step-based **After Dark** time-of-day cycle with named duration presets
+- **After Dark** world clock with device-local real-time, accelerated named presets, and fixed day/night modes
 - Gen 1 **moonlit night palette treatment** on outdoor maps, with UI/interiors kept readable
 - brief non-blocking **night/morning transition notices**
 - one centralized wild encounter arbiter for rumors, ecology, night rules, run mutations, and strange encounters
@@ -66,7 +66,7 @@ Persistent global state lives in the mod's `mod.save` namespace. Per-Pokémon hi
 
 ## Day/night options
 
-The day/night cycle uses named presets instead of a raw step-only control:
+`TIME SOURCE` defaults to **Real Time**, which follows the device's local clock. **Accelerated** uses the named step presets below, while **Fixed Day** and **Fixed Night** are useful overrides/testing modes. The accelerated cycle starts at 06:00 and completes a full 24-hour Kanto day across two preset lengths:
 
 - Very Fast — 256 steps
 - Fast — 512 steps
@@ -77,7 +77,7 @@ The day/night cycle uses named presets instead of a raw step-only control:
 
 `NIGHT VISUAL` controls the Gen 1 presentation independently of the semantic time-of-day system. At night, outdoor world palette zones are shifted toward a much more obvious moonlit blue/navy ramp while normal UI remains bright; ADVANCED color mode receives a world-canvas-only grade. Indoor maps are left substantially unchanged. When the cycle crosses a boundary, a short non-blocking `NIGHT HAS FALLEN` or `MORNING HAS COME` notice appears.
 
-Future Gold/Silver support should use the target game's native `MORN` / `DAY` / `NITE` presentation instead of applying the Gen 1 fallback.
+When **Battle Art Voxel Fork** is installed, Kanto Expansion loads after it and adapts Battle Art's existing `SYNC` clock to the same Kanto hour. Battle Art therefore keeps ownership of its voxel sky, sun/moon, shadows, tint, and lit windows; its explicit DAY/NIGHT/DUSK/DAWN/CYCLE choices remain overrides. No Battle Art files are patched.\n\nOther mods can consume `mod.find(\"gen1recomp_expansion\").exports.time` (`hour`, `period`, `fraction`, `source`) instead of duplicating the clock. Future Gold/Silver support should use the target game's native `MORN` / `DAY` / `NITE` presentation instead of applying the Gen 1 fallback.
 
 ## Tagged development releases
 
@@ -111,4 +111,4 @@ For night presentation specifically, test an outdoor town/route, an indoor map, 
 
 ## Current version
 
-`0.1.1` — framework/basics pass with improved day/night presentation and tagged release packaging.
+`0.1.2` — authoritative Gen 1 world clock with real-time/accelerated modes and Battle Art voxel clock compatibility.
