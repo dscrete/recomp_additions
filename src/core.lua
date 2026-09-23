@@ -28,7 +28,6 @@ return function(mod)
       currentTrainerParty = nil,
       battle = nil,
       lastWildAnomaly = nil,
-      generation = nil,
     },
     rumorDefs = {},
     directorDefs = {},
@@ -161,11 +160,28 @@ return function(mod)
     return mood
   end
 
-  function ctx.currentTodFromSteps()
+  -- Shared semantic time-of-day. Gen 1 has no native clock, so the expansion
+  -- supplies one from steps. Later generations should use the target game's
+  -- native world time instead of inventing a second clock.
+  function ctx.currentTod()
     if not ctx.feature("night_cycle") then return "DAY" end
+
+    if mod.generation ~= 1 then
+      local game = ctx.runtime.game
+      local world = game and game.world
+      local native = world and (world.tod or world.daytime)
+      if native == "NITE" then return "NIGHT" end
+      if native == "MORN" then return "MORNING" end
+      return native or "DAY"
+    end
+
     local length = math.max(256, tonumber(mod.options:get("night_cycle_preset")) or 1024)
     return (math.floor(ctx.runtime.steps / length) % 2 == 0) and "DAY" or "NIGHT"
   end
+
+  -- Compatibility alias for the initial framework name. New code should use
+  -- currentTod(), since only Gen 1 derives the answer from steps.
+  ctx.currentTodFromSteps = ctx.currentTod
 
   function ctx.registerDirectorEvent(def)
     assert(type(def) == "table" and type(def.run) == "function",
