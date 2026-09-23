@@ -1,9 +1,11 @@
-name: Package development release
+name: Package tagged release
 
 on:
   push:
     branches:
       - main
+    paths:
+      - .release
 
 permissions:
   contents: write
@@ -15,11 +17,22 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Read release tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="$(tr -d '[:space:]' < .release)"
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid release tag in .release: $tag" >&2
+            exit 1
+          fi
+          echo "RELEASE_TAG=$tag" >> "$GITHUB_ENV"
+          echo "ZIP_PATH=dist/gen1recomp_expansion-${tag}.zip" >> "$GITHUB_ENV"
+
       - name: Build installable ZIP
         shell: bash
         run: |
           set -euo pipefail
-          short_sha="${GITHUB_SHA::7}"
           stage="dist/gen1recomp_expansion"
           mkdir -p "$stage"
 
@@ -30,25 +43,20 @@ jobs:
 
           (
             cd dist
-            zip -r "gen1recomp_expansion-${short_sha}.zip" gen1recomp_expansion
+            zip -r "gen1recomp_expansion-${RELEASE_TAG}.zip" gen1recomp_expansion
           )
 
-          echo "SHORT_SHA=$short_sha" >> "$GITHUB_ENV"
-          echo "ZIP_PATH=dist/gen1recomp_expansion-${short_sha}.zip" >> "$GITHUB_ENV"
-
-      - name: Create prerelease for commit
+      - name: Create tagged prerelease
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          tag="dev-${GITHUB_SHA}"
-          title="Development build ${SHORT_SHA}"
-          notes="Automated development build from commit ${GITHUB_SHA}. Extract the top-level gen1recomp_expansion directory into Gen1Recomp's mods directory."
+          notes="Automated Kanto Expansion build ${RELEASE_TAG} from commit ${GITHUB_SHA}. Extract the top-level gen1recomp_expansion directory into Gen1Recomp's mods directory."
 
-          gh release create "$tag" "$ZIP_PATH" \
+          gh release create "$RELEASE_TAG" "$ZIP_PATH" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title "$title" \
+            --title "Kanto Expansion ${RELEASE_TAG}" \
             --notes "$notes" \
             --prerelease
