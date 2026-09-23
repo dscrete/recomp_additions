@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.1.4
+
+- Added the manifest `github` source so Gen1Recomp can discover releases for Update and Versions once the repository is public.
+
 ## 0.1.3
 
 - Removed the experimental manifest flag so fresh installs are enabled by default under Gen1Recomp's mod enable-state rules.
