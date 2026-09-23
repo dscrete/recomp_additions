@@ -7,6 +7,7 @@ local MODULES = {
   "src/extras.lua",
   "src/trainers.lua",
   "src/world.lua",
+  "src/compat.lua",
   "src/night_visual.lua",
   "src/pokemon.lua",
   "src/ui.lua",
@@ -35,6 +36,16 @@ return function(mod)
     { key = "ecology", label = "ROUTE ECOLOGY", type = "toggle", default = true },
     { key = "wild_anomalies", label = "STRANGE ENCOUNTERS", type = "toggle", default = true },
     { key = "night_cycle", label = "AFTER DARK", type = "toggle", default = true },
+    {
+      key = "night_time_source", label = "TIME SOURCE", type = "choice",
+      default = "REAL_TIME",
+      choices = {
+        { "REAL TIME", "REAL_TIME" },
+        { "ACCELERATED", "ACCELERATED" },
+        { "FIXED DAY", "FIXED_DAY" },
+        { "FIXED NIGHT", "FIXED_NIGHT" },
+      },
+    },
     { key = "anti_randomizer", label = "RUN MUTATIONS", type = "toggle", default = true },
     { key = "ui_entry", label = "START MENU ENTRY", type = "toggle", default = true },
     {
