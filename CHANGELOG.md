@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+## 0.2.0
+
+- Reworked the expansion foundations into reusable content-ready systems rather than isolated counters/state flags.
+- Added explicit persistent save-schema migrations and a persistent run seed.
+- Split randomness into deterministic per-subsystem streams so Director, rumor, mood, mutation, personality and encounter rolls do not reshuffle one another when unrelated content changes.
+- Added shared condition/effect registries for data-driven content rules.
+- Expanded the World Director with event categories, pacing budget, costs, global/per-event cooldowns, recent-category penalties, category suppression, reservations and persistent event history.
+- Rebuilt world moods around pressure, intensity, causes, duration and standardized modifiers used by Director/rumor/anomaly systems.
+- Made run mutations definition-driven with weights, categories, incompatibility support and persisted mutation versioning.
+- Rebuilt rumors as concurrent records with source, credibility, strength, truth/status, map spread, distortion, expiry and explicit resolution.
+- Added persistent per-location bulletin feeds and persistent unreliable-advice claims with source/confidence/truth/disproven state.
+- Rebuilt route ecology around bounded species pressure, catch/defeat/flee history, passive recovery, abundance and optional migration links; ecology replacement chances now scale with pressure.
+- Rebuilt strange encounters as a definition-driven anomaly-trait system; `LEVEL_SURGE` is the first built-in trait.
+- Added Wilds of Kanto interoperability so visible land/water Pokémon consume the same rumor, night, ecology, mutation and anomaly rules as classic encounters, with anomaly identity attached to the exact visible spawn through battle start.
+- Added stable per-Pokémon expansion UIDs, party/box reconciliation and clone/copy splitting so individual history and relationships no longer depend on species or party slot.
+- Rebuilt Pokémon relationships as directed individual UID edges with affinity, rivalry, trust, switch history and persistent state.
+- Added a personality event-signal registry and definition-driven Pokémon title/achievement rules with persistent unlock history.
+- Rebuilt Reverse Pokédex observations and Pokémon superstitions as registries with priorities/conditions and optional believer/community tags.
+- Expanded trainer memory into resentment, respect, embarrassment, confidence, decay, grudge tiers, bounded trainer adaptation and chronological archaeology snapshots.
+- Added trainer-class knowledge/notes with encounter/map/party observations, thresholds and confidence-ready note definitions.
+- Rebuilt battle bets around a complete proposed/accepted/in-battle/resolved/cancelled contract lifecycle with one-shot settlement effects.
+- Expanded Rocket Heat with global/regional state, history, passive decay and named reaction tiers.
+- Added reputation facets plus community/NPC fact memory propagation with confidence degradation.
+- Expanded museum exhibits into staged records with provenance/discovery history; expanded urban legends into clue/transition/resolution state machines.
+- Expanded the traveling NPC system with non-repeating itinerary selection, suspicion, alias/inventory state and encounter history.
+- Expanded curses into per-curse definitions with stages, action history and cleansing; the physical un-discardable bag item remains blocked by the missing public discard interception hook.
+- Expanded the Bootleg League foundation into an ordered persistent gauntlet lifecycle with attempts, failures and completions.
+- Added a reusable time schedule registry on top of Kanto After Dark.
+- Expanded the Start-menu `EXPANSION` screen into overview, system-state and individual Pokémon-history diagnostic pages.
+- Bumped the public extension exports to `api = 2` and exposed the hardened systems for future content modules.
+- Added push-time Lua 5.4 syntax/manifest validation and made tagged releases repeat validation before packaging.
+
 ## 0.1.10
 
 - Restored illumination to the glass portion of Pallet Town's exterior doors without brightening the whole door frame.
