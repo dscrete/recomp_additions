@@ -1,8 +1,8 @@
 # Feature foundations
 
-This document maps the original expansion ideas to the 0.1.0 implementation. "Foundation" means the reusable mechanic/state/API exists and content can be added without redesigning the core.
+This document maps the original expansion ideas to the current implementation. "Foundation" means the reusable mechanic/state/API exists and content can be added without redesigning the core.
 
-| Feature | 0.1.0 status | Current behavior / extension point |
+| Feature | Status | Current behavior / extension point |
 |---|---|---|
 | Pokémon personality quirks | Implemented foundation | Each encountered/used Pokémon can receive persistent `gen1Expansion.personality` metadata. |
 | Kanto rumor machine | Implemented | Persistent timed rumors, eligibility rules, director activation, optional encounter replacement fields. |
@@ -27,7 +27,7 @@ This document maps the original expansion ideas to the 0.1.0 implementation. "Fo
 | Unreliable map / travel advice | Implemented | Rotating deliberately unhelpful tips are generated on map changes/director events. |
 | Pokémon achievements / titles | Implemented foundation | Titles currently include caught, evolved, level 50, 10 crits, 50 KOs, 100 moves and 5000 cumulative damage. |
 | NPC memory contagion / reputation | Implemented foundation | NPC interaction counts plus global battle/catch/blackout/story-change reputation stats are persisted for dialogue conditions. |
-| Kanto After Dark | Implemented foundation | Gen 1 uses a step-based DAY/NIGHT cycle with named duration presets and an optional mild cool/dark finished-frame veil at NIGHT. Gameplay logic consumes semantic time-of-day, not the visual effect. Future Gold/Gen 2 support defers to the game's native MORN/DAY/NITE clock and native presentation instead of running the Gen 1 fallback. |
+| Kanto After Dark | Implemented foundation | Gen 1 uses a step-based DAY/NIGHT cycle with named duration presets. Outdoor world palette zones shift to a clearly moonlit blue/navy ramp at NIGHT while normal UI and indoor maps remain substantially unchanged; ADVANCED color mode receives a world-canvas-only grade. DAY/NIGHT transitions briefly announce themselves without blocking play. Gameplay logic consumes semantic time-of-day, not the visual effect. Future Gold/Gen 2 support defers to the game's native MORN/DAY/NITE clock and presentation. |
 | Anti-randomizer | Implemented | Each run selects three persistent mutations from a small pool that subtly change trainers, wild levels, rumors, Rocket heat or anomalies. |
 
 ## Collision policy
@@ -38,7 +38,7 @@ The systems layer intentionally owns only a small number of engine seams:
 - `trainer.party` handles the small dynamic trainer-level response.
 - `trainer.before_battle` only enforces an already-staged bet.
 - `world.tod` supplies the synthetic step-based clock on Gen 1 only. Later generations keep their native time-of-day result untouched.
-- `render.output_enabled` / `render.output` provide the optional Gen 1 night visual fallback; they are inactive outside Gen 1 and do not own gameplay state.
+- `render.compose` performs the optional Gen 1 world-only night palette treatment while leaving the UI pass alone; `render.hud` draws the short transition notice. Both are inactive outside Gen 1 and do not own gameplay state.
 - `ui.start_menu.items` adds one Expansion entry.
 
 This is preferable to giving every feature its own wrapper and relying on middleware ordering for correctness.
