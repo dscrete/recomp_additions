@@ -33,7 +33,8 @@ The first pass implements the reusable mechanics rather than filling every route
 - persistent **world moods / luck states**
 - lightweight **run mutations** (the anti-randomizer idea)
 - **rumors**, bulletin headlines, and unreliable travel tips
-- step-based **After Dark** time-of-day cycle
+- step-based **After Dark** time-of-day cycle with named duration presets
+- optional lightweight **night visual** fallback for Gen 1
 - one centralized wild encounter arbiter for rumors, ecology, night rules, run mutations, and strange encounters
 - **route ecology pressure** tracking with registerable replacement rules
 - rare **strange wild encounters** with boosted levels
@@ -60,6 +61,23 @@ See [`docs/FEATURES.md`](docs/FEATURES.md) for the feature-by-feature status.
 The important design rule is that systems which can collide share one arbitration point. Wild encounter features all pass through one `encounter.species` wrapper, while timed/ambient events all pass through the World Director. This keeps future content from turning into a stack of hooks fighting over the same result.
 
 Persistent global state lives in the mod's `mod.save` namespace. Per-Pokémon history is stored in one `mon.gen1Expansion` table.
+
+## Day/night options
+
+The day/night cycle uses named presets instead of a raw step-only control:
+
+- Very Fast — 256 steps
+- Fast — 512 steps
+- Normal — 1024 steps
+- Long — 2048 steps
+- Very Long — 4096 steps
+- Marathon — 8192 steps
+
+`NIGHT VISUAL` controls the optional Gen 1 visual fallback independently of the semantic time-of-day system. Future Gold/Silver support should prefer the target game's native time-of-day presentation and leave this fallback disabled or bypassed.
+
+## Automated development releases
+
+Every push to `main` is packaged by GitHub Actions into an installable ZIP and published as a prerelease tagged to that commit. The ZIP contains a single top-level `gen1recomp_expansion/` directory so it can be extracted directly into a `mods/` directory.
 
 ## Deliberately deferred pieces
 
