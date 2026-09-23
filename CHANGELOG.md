@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.1.7
+
+- Fixed 2D lit-window placement to use the actual world-pass camera and canvas dimensions, so Pallet Town window palette zones reach the rendered window pixels.
+
 ## 0.1.6
 
 - Fixed the 2D night-light tile mapping for Pallet Town house windows.
