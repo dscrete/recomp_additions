@@ -18,7 +18,7 @@ Guidance for contributors and coding agents working on Kanto Expansion.
 
 ## Night / time-of-day
 
-- `world.tod` is the shared semantic source of time-of-day. Gameplay logic should consume the semantic value (`DAY`, `NIGHT`, or future equivalents), not infer state from a visual effect.
+- `world.tod` is the shared semantic source of time-of-day. Gameplay logic should consume the semantic value (`DAY`, `NIGHT`, or future equivalents), not infer state from a visual effect.\n- Kanto Expansion owns Gen 1 world time, not every renderer. Prefer renderer adapters that feed the expansion clock into an installed renderer's own lighting system instead of drawing a second lighting pass.\n- Compatibility adapters must use public inter-mod exports/capabilities when available, detect the target defensively, and fail back to vanilla presentation without making another mod mandatory.
 - Gen 1 may use a presentation fallback because the original game lacks native day/night visuals, but the cue must clearly read as a different time of day rather than merely reduced brightness.
 - Prefer a world-only moonlit palette/grade. Keep dialogue boxes, menus, and other UI bright and readable. Normal indoor maps should remain substantially unchanged so entering a building feels lit compared with the outdoor night.
 - A non-blocking transition cue may announce major time changes such as `NIGHT HAS FALLEN` or `MORNING HAS COME`; it must not pause movement or create game-state dependencies.
