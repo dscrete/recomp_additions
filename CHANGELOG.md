@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.1.10
+
+- Restored illumination to the glass portion of Pallet Town's exterior doors without brightening the whole door frame.
+- Extended 2D night-light detection across connected neighbour maps, so visible Pallet Town windows and door glass stay glowing when the player crosses onto Route 1 or another adjacent map.
+
 ## 0.1.9
 
 - Corrected the Pallet Town house-light mapping again after inspecting the actual 2x2 house blocks: `$0B/$0C/$1B/$1C` are the glass-panelled door, while the visible facade windows are OVERWORLD tile `$0A`.
