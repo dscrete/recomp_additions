@@ -161,8 +161,34 @@ return function(mod)
   end
 
   -- Shared semantic time-of-day. Gen 1 has no native clock, so the expansion
-  -- supplies one from steps. Later generations should use the target game's
-  -- native world time instead of inventing a second clock.
+  -- owns a 24-hour Kanto clock. REAL TIME follows the device's local clock;
+  -- accelerated presets map the existing step cycle onto a full day. Later
+  -- generations keep the target game's native clock.
+  function ctx.currentHour()
+    if not ctx.feature("night_cycle") then return 12 end
+
+    if mod.generation ~= 1 then
+      local game = ctx.runtime.game
+      local world = game and game.world
+      local hour = world and (world.hour or world.clockHour)
+      return tonumber(hour)
+    end
+
+    local source = mod.options:get("night_time_source") or "REAL_TIME"
+    if source == "REAL_TIME" then
+      local now = os.date("*t")
+      return ((tonumber(now.hour) or 12)
+        + (tonumber(now.min) or 0) / 60
+        + (tonumber(now.sec) or 0) / 3600) % 24
+    end
+    if source == "FIXED_DAY" then return 12 end
+    if source == "FIXED_NIGHT" then return 0 end
+
+    local length = math.max(256, tonumber(mod.options:get("night_cycle_preset")) or 1024)
+    local cycleSteps = length * 2
+    return ((ctx.runtime.steps % cycleSteps) / cycleSteps * 24 + 6) % 24
+  end
+
   function ctx.currentTod()
     if not ctx.feature("night_cycle") then return "DAY" end
 
@@ -175,12 +201,11 @@ return function(mod)
       return native or "DAY"
     end
 
-    local length = math.max(256, tonumber(mod.options:get("night_cycle_preset")) or 1024)
-    return (math.floor(ctx.runtime.steps / length) % 2 == 0) and "DAY" or "NIGHT"
+    local hour = ctx.currentHour() or 12
+    return (hour >= 18 or hour < 6) and "NIGHT" or "DAY"
   end
 
-  -- Compatibility alias for the initial framework name. New code should use
-  -- currentTod(), since only Gen 1 derives the answer from steps.
+  -- Compatibility alias for the initial framework name.
   ctx.currentTodFromSteps = ctx.currentTod
 
   function ctx.registerDirectorEvent(def)
