@@ -98,16 +98,29 @@ return function(mod, ctx)
     local camera = world and world.camera
     local zones = frame and frame.worldZones
     if type(map) ~= "table" or type(zones) ~= "table"
-      or type(camera) ~= "table" or not map.tileset
-      or map.tileset.id ~= "OVERWORLD" then return end
+      or not map.tileset or map.tileset.id ~= "OVERWORLD" then return end
 
     local blocks = map.tileset.blocks
     if type(blocks) ~= "table" or type(map.blockAt) ~= "function" then return end
 
-    local camX = math.floor(tonumber(camera.x) or 0)
-    local camY = math.floor(tonumber(camera.y) or 0)
-    local viewW = tonumber(frame.ww) or 160
-    local viewH = tonumber(frame.wh) or 144
+    -- render.compose runs after the world pass. The authoritative camera for
+    -- that pass is frame.renderer's world view, but the live overworld camera
+    -- is not guaranteed to be exposed on the controller. Derive the same
+    -- camera origin from the player and actual world-canvas dimensions when
+    -- necessary, matching Camera:follow().
+    local viewW = frame.worldCanvas and frame.worldCanvas:getWidth() or 160
+    local viewH = frame.worldCanvas and frame.worldCanvas:getHeight() or 144
+    local camX = camera and tonumber(camera.x) or nil
+    local camY = camera and tonumber(camera.y) or nil
+    if camX == nil or camY == nil then
+      local player = world and world.player
+      local px = player and tonumber(player.px)
+      local py = player and tonumber(player.py)
+      if px == nil or py == nil then return end
+      camX = px - (viewW / 2 - 16)
+      camY = py - (viewH / 2 - 8)
+    end
+    camX, camY = math.floor(camX), math.floor(camY)
     local tx0 = math.max(0, math.floor(camX / 8))
     local ty0 = math.max(0, math.floor(camY / 8))
     local tx1 = math.min((map.def.width or 0) * 4 - 1, math.floor((camX + viewW) / 8))
@@ -122,6 +135,8 @@ return function(mod, ctx)
         if WINDOW_TILES[tile] then
           zones[#zones + 1] = {
             x = tx * 8 - camX, y = ty * 8 - camY, w = 8, h = 8,
+            -- SGB/DMG source canvases are shade indices; this palette remaps
+            -- the window's white/light pixels to warm lamp colors.
             colors = WINDOW_RAMP,
           }
         end
