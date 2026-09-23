@@ -7,6 +7,7 @@ local MODULES = {
   "src/extras.lua",
   "src/trainers.lua",
   "src/world.lua",
+  "src/night_visual.lua",
   "src/pokemon.lua",
   "src/ui.lua",
   "src/api.lua",
