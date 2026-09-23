@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.1.6
+
+- Fixed the 2D night-light tile mapping for Pallet Town house windows.
+
 ## 0.1.5
 
 - Added warm illuminated exterior windows to the normal Gen 1 2D night renderer, preserving the cool moonlit environment around them.
