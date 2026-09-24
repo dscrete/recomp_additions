@@ -197,13 +197,13 @@ return function(mod, ctx)
           Font.draw("A:NEXT  B:EXIT", 8, 132)
           return
         end
-        if self.monIndex > #party then self.monIndex = 1 end
-        local mon = party[self.monIndex]
+        if state.monIndex > #party then state.monIndex = 1 end
+        local mon = party[state.monIndex]
         local rec = ctx.ensureMonRecord(mon)
         local titleCount = countPairs(rec and rec.titles)
         local relCount = countPairs(rec and rec.relationships)
         local species = ctx.speciesOf(mon) or "UNKNOWN"
-        Font.draw(("%d/%d %s"):format(self.monIndex, #party, ctx.truncate(humanize(species), 12)), 8, 20)
+        Font.draw(("%d/%d %s"):format(state.monIndex, #party, ctx.truncate(humanize(species), 12)), 8, 20)
         Font.draw("ID " .. ctx.truncate(rec and rec.uid or "NONE", 15), 8, 31)
         Font.draw("PERS " .. ctx.truncate(humanize(rec and rec.personality or "NONE"), 12), 8, 42)
         Font.draw("TITLES " .. tostring(titleCount), 8, 53)
