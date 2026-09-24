@@ -114,7 +114,7 @@ return function(mod, ctx)
         drawWrapped(Font, director.lastEvent or "NONE", 94, 2)
         Font.draw("MAP", 8, 114)
         Font.draw(ctx.truncate(humanize(ctx.runtime.currentMap or "NONE"), 18), 8, 124)
-        Font.draw("A:NEXT  B:EXIT", 8, 136)
+        Font.draw("A:NEXT  B:EXIT", 8, 132)
       end
 
       local function drawRumor()
@@ -131,7 +131,7 @@ return function(mod, ctx)
           Font.draw(ctx.truncate(humanize(rumor.source), 18), 8, 108)
           Font.draw("TRUTH " .. ctx.truncate(humanize(rumor.truth), 12), 8, 118)
         end
-        Font.draw("A:NEXT  B:EXIT", 8, 136)
+        Font.draw("A:NEXT  B:EXIT", 8, 132)
       end
 
       local function drawLocal()
@@ -141,7 +141,7 @@ return function(mod, ctx)
         y = math.max(y + 4, 68)
         Font.draw("BULLETIN", 8, y)
         drawWrapped(Font, mod.save:get("current_bulletin", "NONE"), y + 12, 4)
-        Font.draw("A:NEXT  B:EXIT", 8, 136)
+        Font.draw("A:NEXT  B:EXIT", 8, 132)
       end
 
       local function drawRun()
@@ -160,9 +160,9 @@ return function(mod, ctx)
         Font.draw(("BATTLES %d"):format(tonumber(rep.battles) or 0), 8, 66)
         Font.draw(("CATCHES %d"):format(tonumber(rep.catches) or 0), 8, 78)
         Font.draw("MUSEUM " .. tostring(ctx.exhibitCount()), 8, 90)
-        Font.draw("PARTY BELIEF", 8, 102)
-        drawWrapped(Font, superstition, 114, 2)
-        Font.draw("A:NEXT  B:EXIT", 8, 136)
+        Font.draw("PARTY BELIEF", 8, 100)
+        drawWrapped(Font, superstition, 110, 2)
+        Font.draw("A:NEXT  B:EXIT", 8, 132)
       end
 
       local function drawSystems()
@@ -186,7 +186,7 @@ return function(mod, ctx)
         Font.draw("TRAVELER " .. ctx.truncate(humanize(traveler and traveler.mapId or "NONE"), 9), 8, 97)
         Font.draw("ANOMALY", 8, 108)
         Font.draw(ctx.truncate(humanize(anomalyId), 18), 8, 119)
-        Font.draw("A:NEXT  B:EXIT", 8, 136)
+        Font.draw("A:NEXT  B:EXIT", 8, 132)
       end
 
       local function drawPokemon()
@@ -194,7 +194,7 @@ return function(mod, ctx)
         local party = game.save and game.save.party or {}
         if #party == 0 then
           Font.draw("PARTY EMPTY", 8, 30)
-          Font.draw("A:NEXT  B:EXIT", 8, 136)
+          Font.draw("A:NEXT  B:EXIT", 8, 132)
           return
         end
         if self.monIndex > #party then self.monIndex = 1 end
